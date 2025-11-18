@@ -177,13 +177,17 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
       }
     }
     
+    // 🔄 LIMPIAR comida existente antes de cargar la del servidor
+    print('🧹 Limpiando comida existente...');
+    _clearAllFood();
+    
     // Cargar comida del servidor
     final foods = data['foods'] as List;
     print('🍎 Comida recibida del servidor: ${foods.length} orbes');
     for (var foodData in foods) {
       _addServerFood(foodData);
     }
-    print('✅ Comida agregada al mundo');
+    print('✅ Comida agregada al mundo (total: ${world.children.whereType<Food>().length} orbes)');
   }
   
   void _handlePlayerJoined(Map<String, dynamic> data) {
@@ -285,6 +289,15 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
       print('❌ Error agregando comida: $e');
       print('Datos recibidos: $foodData');
     }
+  }
+  
+  void _clearAllFood() {
+    // Eliminar toda la comida del mundo
+    final allFood = world.children.whereType<Food>().toList();
+    for (var food in allFood) {
+      food.removeFromParent();
+    }
+    print('🧹 ${allFood.length} orbes de comida eliminados');
   }
 
   void spawnFood() {

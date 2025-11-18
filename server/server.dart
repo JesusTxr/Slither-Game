@@ -267,11 +267,17 @@ class SlitherServer {
     room.isStarted = true;
     print('🎮 Juego iniciado en sala $roomCode');
     
-    // Notificar a todos en la sala
+    // Obtener toda la comida de la sala
+    var roomFoods = room.foods.values.map((f) => f.toJson()).toList();
+    
+    // Notificar a todos en la sala con la comida sincronizada
     broadcastToRoom(roomCode, {
       'type': 'gameStart',
       'roomCode': roomCode,
+      'foods': roomFoods,  // 🔑 Enviar comida sincronizada a todos
     });
+    
+    print('🍎 Enviadas ${roomFoods.length} comidas a todos los jugadores en sala $roomCode');
   }
   
   void sendInitToPlayer(Player player, GameRoom room) {

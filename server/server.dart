@@ -107,10 +107,15 @@ class SlitherServer {
       handleConnection(webSocket);
     });
     
+    // Obtener puerto de la variable de entorno (para Render) o usar 8080 por defecto
+    final portEnv = Platform.environment['PORT'];
+    final port = portEnv != null ? int.parse(portEnv) : 8080;
+    
     // Iniciar el servidor
-    var server = await io.serve(handler, '0.0.0.0', 8080);
+    var server = await io.serve(handler, '0.0.0.0', port);
     print('🚀 Servidor escuchando en ws://${server.address.host}:${server.port}');
     print('✅ Sistema de salas activado');
+    print('📡 Puerto: $port ${portEnv != null ? "(desde PORT env)" : "(por defecto)"}');
     
     // Timer para regenerar comida en cada sala
     Timer.periodic(Duration(seconds: 2), (timer) {

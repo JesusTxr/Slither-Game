@@ -141,14 +141,25 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
       print('📤 Enviando código de sala: $roomCode');
       networkService!.sendRoomCode(roomCode!);
       
-      // Dar tiempo para que el servidor envíe el mensaje init
-      await Future.delayed(Duration(milliseconds: 500));
+      // ⏳ Esperar hasta 60 segundos para que el servidor responda
+      // (Render puede tardar ~30-60 segundos en "despertar")
+      print('⏳ Esperando respuesta del servidor (puede tardar hasta 60 segundos si está despertando)...');
+      int attempts = 0;
+      while (_playerHead == null && attempts < 120) {  // 120 * 500ms = 60 segundos
+        await Future.delayed(Duration(milliseconds: 500));
+        attempts++;
+        if (attempts % 4 == 0) {  // Cada 2 segundos
+          print('⏳ Esperando... (${attempts ~/ 2} segundos)');
+        }
+      }
       
       // Verificar si recibimos datos del servidor
       if (_playerHead == null) {
-        print('⚠️ No se recibió respuesta del servidor');
+        print('⚠️ No se recibió respuesta del servidor después de ${attempts ~/ 2} segundos');
         throw Exception('Servidor no respondió');
       }
+      
+      print('✅ Servidor respondió exitosamente');
     } catch (e) {
       print('❌ Error conectando al servidor: $e');
       print('📴 Cambiando a modo solo...');

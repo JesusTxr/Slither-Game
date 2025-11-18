@@ -9,6 +9,7 @@ import 'package:slither_game/components/background.dart';
 import 'package:slither_game/components/body_segment.dart';
 import 'package:slither_game/components/food.dart';
 import 'package:slither_game/components/joystick.dart';
+import 'package:slither_game/components/minimap.dart';
 import 'package:slither_game/components/player_head.dart';
 import 'package:slither_game/components/remote_player.dart';
 import 'package:slither_game/config/game_config.dart';
@@ -92,6 +93,11 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
       position: Vector2(100, 100), // Posición temporal, se ajustará en onGameResize
     );
     cameraComponent.viewport.add(joystick!);
+
+    // 6.5. Agregar minimapa al viewport
+    final minimap = Minimap();
+    await cameraComponent.viewport.add(minimap);
+    print('🗺️ Minimapa agregado');
 
     // 7. Comida (solo en modo solo o si el servidor falló)
     if (!isMultiplayer) {

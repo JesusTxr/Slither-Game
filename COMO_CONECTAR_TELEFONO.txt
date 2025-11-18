@@ -1,0 +1,73 @@
+╔════════════════════════════════════════════════════════╗
+║   CÓMO CONECTAR TU TELÉFONO AL JUEGO MULTIJUGADOR    ║
+╚════════════════════════════════════════════════════════╝
+
+📋 PASO A PASO:
+
+1️⃣  INICIA EL SERVIDOR EN TU PC
+   Haz doble clic en: INICIAR_SERVIDOR.bat
+   
+   Verás tu IP, ejemplo: 192.168.1.105
+
+2️⃣  ANOTA TU IP
+   La IP que aparece después de "Tu IP actual es:"
+   Ejemplo: 192.168.1.105
+
+3️⃣  CONFIGURA EL JUEGO
+   Abre: lib/config/game_config.dart
+   
+   Busca la línea:
+   static String serverUrl = 'ws://192.168.1.XXX:8080';
+   
+   Reemplaza XXX con tu IP:
+   static String serverUrl = 'ws://192.168.1.105:8080';
+
+4️⃣  CONECTA TU TELÉFONO
+   - Conecta tu teléfono por USB
+   - Habilita "Depuración USB" en tu teléfono:
+     Android: Ajustes > Opciones de desarrollador > Depuración USB
+   
+   - En la terminal ejecuta:
+     flutter run
+
+5️⃣  JUEGA!
+   - En tu teléfono, presiona "Multijugador"
+   - En tu PC, también presiona "Multijugador"
+   - ¡Deberías ver al otro jugador en azul!
+
+═══════════════════════════════════════════════════════
+
+⚠️  IMPORTANTE:
+
+• Teléfono y PC deben estar en la MISMA WiFi
+• El servidor debe estar corriendo ANTES de jugar
+• Si no funciona, desactiva el firewall temporalmente
+
+═══════════════════════════════════════════════════════
+
+🎮 PARA MÚLTIPLES TELÉFONOS:
+
+Todos los teléfonos deben:
+1. Tener la misma configuración (misma IP del servidor)
+2. Estar en la misma WiFi que la PC
+3. Presionar "Multijugador" en el juego
+
+═══════════════════════════════════════════════════════
+
+🌍 PARA JUGAR POR INTERNET (con amigos lejos):
+
+1. Descarga Ngrok: https://ngrok.com/download
+2. Inicia el servidor normalmente
+3. En otra terminal: ngrok http 8080
+4. Copia la URL que te da (ejemplo: abc123.ngrok.io)
+5. Configura: ws://abc123.ngrok.io:8080
+6. Comparte esa configuración con tus amigos
+
+═══════════════════════════════════════════════════════
+
+¿Problemas? Revisa COMO_JUGAR_MULTIJUGADOR.md
+
+
+
+
+

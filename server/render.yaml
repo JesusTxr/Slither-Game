@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: slither-game-server
+    env: docker
+    plan: free
+    healthCheckPath: /
+    envVars:
+      - key: PORT
+        value: 8080
+

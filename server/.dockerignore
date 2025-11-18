@@ -1,0 +1,21 @@
+# Archivos de Git
+.git
+.gitignore
+
+# Archivos de Dart
+.dart_tool/
+.packages
+pubspec.lock
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Scripts locales
+start_server.bat
+start_server.sh
+README.md
+
+# Documentación
+*.md
+

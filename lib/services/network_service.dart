@@ -18,6 +18,7 @@ class NetworkService {
   Function(Map<String, dynamic>)? onFoodUpdate;
   Function(Map<String, dynamic>)? onGameStart;  // 🎮 Nuevo callback para inicio de juego
   Function(Map<String, dynamic>)? onPlayerDied;  // 💀 Callback para muerte de jugador
+  Function(Map<String, dynamic>)? onAllPlayersReady;  // 👥 Callback cuando todos los jugadores están listos
   
   bool get isConnected => _channel != null;
   
@@ -85,6 +86,10 @@ class NetworkService {
         case 'playerDied':
           print('💀 Mensaje de muerte de jugador recibido');
           onPlayerDied?.call(data);
+          break;
+        case 'allPlayersReady':
+          print('👥 Todos los jugadores están listos');
+          onAllPlayersReady?.call(data);
           break;
         default:
           print('Tipo de mensaje desconocido: $type');

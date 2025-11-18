@@ -25,6 +25,7 @@ class GameScreen extends StatelessWidget {
             game: SlitherGame(roomCode: roomCode),
             overlayBuilderMap: {
               'GameOver': (context, game) => _buildGameOverOverlay(context, game as SlitherGame),
+              'WaitingForPlayers': (context, game) => _buildWaitingOverlay(context),
             },
           ),
           // Indicador de modo
@@ -103,6 +104,40 @@ class GameScreen extends StatelessWidget {
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildWaitingOverlay(BuildContext context) {
+    return Container(
+      color: Colors.black87,
+      child: const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(
+              color: Color(0xFF00ff88),
+              strokeWidth: 6,
+            ),
+            SizedBox(height: 30),
+            Text(
+              '⏳ Esperando jugadores...',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 15),
+            Text(
+              'Todos los jugadores deben conectarse',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 18,
               ),
             ),
           ],

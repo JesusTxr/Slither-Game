@@ -45,6 +45,7 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
   final double _networkUpdateInterval = 0.05; // Enviar actualización cada 50ms
   bool isMultiplayer = false;
   String? roomCode;  // 🔑 Código de sala para multijugador
+  bool waitingForPlayers = false;  // 🔑 Esperando a que todos los jugadores se conecten
 
   // Constructor
   SlitherGame({this.roomCode});
@@ -124,6 +125,7 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
     networkService!.onFoodEaten = _handleFoodEaten;
     networkService!.onFoodUpdate = _handleFoodUpdate;
     networkService!.onPlayerDied = _handlePlayerDied;
+    networkService!.onAllPlayersReady = _handleAllPlayersReady;
     
     try {
       await networkService!.connect();
@@ -199,6 +201,22 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
       _addServerFood(foodData);
     }
     print('✅ Comida agregada al mundo (total: ${world.children.whereType<Food>().length} orbes)');
+    
+    // 🔄 Si el juego ya comenzó, esperar a que todos los jugadores se conecten
+    final gameStarted = data['gameStarted'] ?? false;
+    if (gameStarted) {
+      print('⏳ Juego ya iniciado. Esperando a que todos los jugadores se conecten...');
+      waitingForPlayers = true;
+      paused = true;  // Pausar el motor hasta que todos estén listos
+      overlays.add('WaitingForPlayers');
+    }
+  }
+  
+  void _handleAllPlayersReady(Map<String, dynamic> data) {
+    print('✅ Todos los jugadores están listos. ¡Comenzando juego!');
+    waitingForPlayers = false;
+    paused = false;  // Reanudar el motor
+    overlays.remove('WaitingForPlayers');
   }
   
   void _handlePlayerJoined(Map<String, dynamic> data) {

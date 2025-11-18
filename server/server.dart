@@ -57,6 +57,8 @@ class GameRoom {
   bool isStarted;
   final Map<String, Food> foods;
   final DateTime createdAt;
+  final Set<String> playersInGame; // Jugadores que ya se conectaron al juego
+  int expectedPlayers; // Cuántos jugadores se esperan en el juego
   
   GameRoom({
     required this.code,
@@ -65,9 +67,12 @@ class GameRoom {
     this.isStarted = false,
     Map<String, Food>? foods,
     DateTime? createdAt,
+    Set<String>? playersInGame,
+    this.expectedPlayers = 0,
   }) : playerIds = playerIds ?? [hostId],
        foods = foods ?? {},
-       createdAt = createdAt ?? DateTime.now();
+       createdAt = createdAt ?? DateTime.now(),
+       playersInGame = playersInGame ?? {};
 }
 
 // Clase para representar comida
@@ -270,7 +275,11 @@ class SlitherServer {
     if (room == null) return;
     
     room.isStarted = true;
+    // Establecer cuántos jugadores se esperan (los que están en el lobby)
+    room.expectedPlayers = room.playerIds.length;
+    room.playersInGame.clear();  // Limpiar lista de jugadores en el juego
     print('🎮 Juego iniciado en sala $roomCode');
+    print('👥 Esperando ${room.expectedPlayers} jugadores en el juego');
     
     // Obtener toda la comida de la sala
     var roomFoods = room.foods.values.map((f) => f.toJson()).toList();
@@ -304,7 +313,28 @@ class SlitherServer {
       'hostId': room.hostId,  // 🔑 IMPORTANTE: ID del host
       'players': roomPlayers,
       'foods': roomFoods,
+      'gameStarted': room.isStarted,  // 🔑 Indicar si el juego ya comenzó
     }));
+    
+    // Si el juego ya comenzó, trackear que este jugador se conectó
+    if (room.isStarted) {
+      room.playersInGame.add(player.id);
+      print('👤 Jugador ${player.id} conectado al juego (${room.playersInGame.length}/${room.expectedPlayers})');
+      
+      // Verificar si todos los jugadores están conectados
+      checkAllPlayersReady(room);
+    }
+  }
+  
+  void checkAllPlayersReady(GameRoom room) {
+    if (room.playersInGame.length >= room.expectedPlayers && room.expectedPlayers > 0) {
+      print('✅ Todos los jugadores conectados en sala ${room.code}. ¡Comenzando juego!');
+      
+      // Notificar a todos que pueden comenzar
+      broadcastToRoom(room.code, {
+        'type': 'allPlayersReady',
+      });
+    }
   }
   
   void handleFoodEaten(String playerId, Map<String, dynamic> data) {

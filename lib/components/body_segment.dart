@@ -13,7 +13,15 @@ class BodySegment extends PositionComponent
     this.ownerId,
   }) : super(anchor: Anchor.center);
 
-  final _paint = Paint()..color = const Color(0xFF008000);
+  final _paint = Paint()
+    ..color = const Color(0xFF00AA00)
+    ..style = PaintingStyle.fill;
+  
+  final _borderPaint = Paint()
+    ..color = const Color(0xFF006600)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1.5;
+    
   bool _hitboxAdded = false;
 
   @override
@@ -25,7 +33,14 @@ class BodySegment extends PositionComponent
   @override
   void render(Canvas canvas) {
     super.render(canvas);
-    canvas.drawCircle((size / 2).toOffset(), size.x / 2, _paint);
+    final center = (size / 2).toOffset();
+    final radius = size.x / 2;
+    
+    // Dibujar el cuerpo principal
+    canvas.drawCircle(center, radius, _paint);
+    
+    // Dibujar borde oscuro para definición
+    canvas.drawCircle(center, radius, _borderPaint);
   }
 
   @override

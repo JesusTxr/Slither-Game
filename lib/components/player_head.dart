@@ -11,9 +11,17 @@ class PlayerHead extends PositionComponent
   PlayerHead({required Vector2 startPosition})
     : super(position: startPosition, anchor: Anchor.center);
 
-  final _paint = Paint()..color = const Color(0xFF00FF00);
+  final _paint = Paint()
+    ..color = const Color(0xFF00FF00)
+    ..style = PaintingStyle.fill;
+  
+  final _borderPaint = Paint()
+    ..color = const Color(0xFF00AA00)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 2.0;
+    
   final double _speed = 150;
-  final double segmentSpacing = 5.0;
+  final double segmentSpacing = 2.0; // Reducido para que los segmentos estén más juntos
   List<Vector2> pathPoints = [];
 
   @override
@@ -25,7 +33,14 @@ class PlayerHead extends PositionComponent
   @override
   void render(Canvas canvas) {
     super.render(canvas);
-    canvas.drawCircle((size / 2).toOffset(), size.x / 2, _paint);
+    final center = (size / 2).toOffset();
+    final radius = size.x / 2;
+    
+    // Dibujar la cabeza principal
+    canvas.drawCircle(center, radius, _paint);
+    
+    // Dibujar borde para definición
+    canvas.drawCircle(center, radius, _borderPaint);
   }
 
   @override

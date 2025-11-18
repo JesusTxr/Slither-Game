@@ -390,10 +390,10 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
       body.add(segment);
     }
 
-    // Actualizar posiciones de los segmentos del cuerpo
+    // Actualizar posiciones de los segmentos del cuerpo (más juntos)
     if (playerHead.pathPoints.isNotEmpty) {
       for (var i = 0; i < body.length; i++) {
-        final pointIndex = playerHead.pathPoints.length - 1 - (i * 3);
+        final pointIndex = playerHead.pathPoints.length - 1 - (i * 1); // Cambiado de 3 a 1 para más densidad
         if (pointIndex >= 0) {
           body[i].position = playerHead.pathPoints[pointIndex];
         }
@@ -402,7 +402,7 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
 
     // Limpiar puntos antiguos del camino
     final lastSegmentIndex =
-        playerHead.pathPoints.length - 1 - ((body.length - 1) * 3);
+        playerHead.pathPoints.length - 1 - ((body.length - 1) * 1);
     if (lastSegmentIndex > 10) {
       playerHead.pathPoints.removeRange(0, lastSegmentIndex - 10);
     }

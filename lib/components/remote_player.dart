@@ -14,9 +14,17 @@ class RemotePlayer extends PositionComponent
   int bodyLength;
   int score;
   
-  final _paint = Paint()..color = const Color(0xFF0088FF); // Azul para otros jugadores
+  final _paint = Paint()
+    ..color = const Color(0xFF0088FF)
+    ..style = PaintingStyle.fill; // Azul para otros jugadores
+  
+  final _borderPaint = Paint()
+    ..color = const Color(0xFF0055AA)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 2.0;
+    
   final double _speed = 150;
-  final double segmentSpacing = 5.0;
+  final double segmentSpacing = 2.0; // Reducido para que los segmentos estén más juntos
   double baseRadius = 10;
   double get currentRadius => baseRadius + (bodyLength * 0.1);
   
@@ -42,14 +50,20 @@ class RemotePlayer extends PositionComponent
   void render(Canvas canvas) {
     super.render(canvas);
     
-    // Dibujar la cabeza
-    canvas.drawCircle((size / 2).toOffset(), size.x / 2, _paint);
+    final center = (size / 2).toOffset();
+    final radius = size.x / 2;
+    
+    // Dibujar la cabeza principal
+    canvas.drawCircle(center, radius, _paint);
+    
+    // Dibujar borde para definición
+    canvas.drawCircle(center, radius, _borderPaint);
     
     // Dibujar el nickname encima
     final textPainter = TextPainter(
       text: TextSpan(
         text: nickname,
-        style: TextStyle(
+        style: const TextStyle(
           color: Color(0xFFFFFFFF),
           fontSize: 12,
           fontWeight: FontWeight.bold,
@@ -113,10 +127,10 @@ class RemotePlayer extends PositionComponent
       body.add(segment);
     }
     
-    // Actualizar posiciones de los segmentos del cuerpo
+    // Actualizar posiciones de los segmentos del cuerpo (más juntos)
     if (pathPoints.isNotEmpty) {
       for (var i = 0; i < body.length; i++) {
-        final pointIndex = pathPoints.length - 1 - (i * 3);
+        final pointIndex = pathPoints.length - 1 - (i * 1); // Cambiado de 3 a 1 para más densidad
         if (pointIndex >= 0) {
           body[i].position = pathPoints[pointIndex];
         }
@@ -125,7 +139,7 @@ class RemotePlayer extends PositionComponent
     
     // Limpiar puntos antiguos del camino
     final lastSegmentIndex =
-        pathPoints.length - 1 - ((body.length - 1) * 3);
+        pathPoints.length - 1 - ((body.length - 1) * 1);
     if (lastSegmentIndex > 10) {
       pathPoints.removeRange(0, lastSegmentIndex - 10);
     }

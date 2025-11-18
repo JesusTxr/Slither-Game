@@ -20,6 +20,10 @@ class RemotePlayer extends PositionComponent
   double baseRadius = 10;
   double get currentRadius => baseRadius + (bodyLength * 0.1);
   
+  // 🔄 Variables para interpolación suave
+  Vector2? _targetPosition;
+  double _interpolationSpeed = 8.0; // Qué tan rápido se interpola (mayor = más rápido)
+  
   RemotePlayer({
     required this.playerId,
     required this.nickname,
@@ -64,18 +68,40 @@ class RemotePlayer extends PositionComponent
   }
 
   void updatePosition(Vector2 newPosition) {
-    position = newPosition;
-    
-    if (pathPoints.isEmpty ||
-        (position - pathPoints.last).length > segmentSpacing) {
-      pathPoints.add(position.clone());
-    }
+    // En lugar de cambiar la posición instantáneamente, establecer como objetivo
+    _targetPosition = newPosition.clone();
   }
 
   @override
   void update(double dt) {
     super.update(dt);
     size = Vector2.all(currentRadius * 2);
+    
+    // 🔄 Interpolación suave hacia la posición objetivo
+    if (_targetPosition != null) {
+      // Calcular la distancia a la posición objetivo
+      final distance = (_targetPosition! - position).length;
+      
+      if (distance > 0.5) {
+        // Interpolar suavemente hacia el objetivo
+        final direction = (_targetPosition! - position).normalized();
+        final moveDistance = _interpolationSpeed * distance * dt;
+        
+        // Mover hacia el objetivo
+        final movement = direction * moveDistance;
+        position += movement;
+        
+        // Agregar al path si nos movimos lo suficiente
+        if (pathPoints.isEmpty ||
+            (position - pathPoints.last).length > segmentSpacing) {
+          pathPoints.add(position.clone());
+        }
+      } else {
+        // Si estamos muy cerca, saltar directamente
+        position = _targetPosition!.clone();
+        _targetPosition = null;
+      }
+    }
     
     // Hacer crecer el cuerpo según bodyLength
     if (body.length < bodyLength) {

@@ -5,7 +5,7 @@ FROM dart:stable AS build
 WORKDIR /app
 
 # Copia los archivos de dependencias
-COPY pubspec.yaml pubspec.lock ./
+COPY pubspec.yaml ./
 
 # Descarga las dependencias
 RUN dart pub get

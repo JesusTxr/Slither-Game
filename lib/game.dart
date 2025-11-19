@@ -47,6 +47,11 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
   bool isMultiplayer = false;
   String? roomCode;  // 🔑 Código de sala para multijugador
   bool waitingForPlayers = false;  // 🔑 Esperando a que todos los jugadores se conecten
+  
+  // 🏆 Sistema de ranking
+  List<Map<String, dynamic>> ranking = [];
+  int remainingSeconds = 300; // 5 minutos por defecto
+  bool gameEnded = false;
 
   // Constructor
   SlitherGame({this.roomCode});
@@ -132,6 +137,8 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
     networkService!.onFoodUpdate = _handleFoodUpdate;
     networkService!.onPlayerDied = _handlePlayerDied;
     networkService!.onAllPlayersReady = _handleAllPlayersReady;
+    networkService!.onRankingUpdate = _handleRankingUpdate;  // 🏆
+    networkService!.onGameEnd = _handleGameEnd;  // 🏁
     
     try {
       await networkService!.connect();
@@ -285,6 +292,33 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
       player.removeFromParent();
       print('✅ Jugador remoto $playerId removido del juego');
     }
+  }
+  
+  void _handleRankingUpdate(Map<String, dynamic> data) {
+    // Actualizar el ranking y tiempo restante
+    ranking = List<Map<String, dynamic>>.from(data['ranking']);
+    remainingSeconds = data['remainingSeconds'] ?? 0;
+    
+    // El overlay de RankingDisplay se actualiza automáticamente
+    // ya que lee directamente de estas variables
+  }
+  
+  void _handleGameEnd(Map<String, dynamic> data) {
+    print('🏁 ¡Juego terminado!');
+    gameEnded = true;
+    paused = true;  // Pausar el juego
+    
+    // Actualizar ranking final
+    ranking = List<Map<String, dynamic>>.from(data['ranking']);
+    final winner = data['winner'];
+    
+    if (winner != null) {
+      print('🏆 Ganador: ${winner['nickname']} con ${winner['score']} puntos');
+    }
+    
+    // Mostrar overlay de fin de juego
+    overlays.remove('WaitingForPlayers');
+    overlays.add('GameEnd');
   }
   
   void _addRemotePlayer(Map<String, dynamic> playerData) {

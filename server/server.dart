@@ -59,6 +59,10 @@ class GameRoom {
   final DateTime createdAt;
   final Set<String> playersInGame; // Jugadores que ya se conectaron al juego
   int expectedPlayers; // Cuántos jugadores se esperan en el juego
+  DateTime? gameStartTime; // Cuando comenzó el juego
+  Timer? gameTimer; // Timer del juego
+  bool isGameEnded; // Si el juego terminó
+  static const int gameDurationSeconds = 300; // 5 minutos
   
   GameRoom({
     required this.code,
@@ -69,10 +73,20 @@ class GameRoom {
     DateTime? createdAt,
     Set<String>? playersInGame,
     this.expectedPlayers = 0,
+    this.gameStartTime,
+    this.gameTimer,
+    this.isGameEnded = false,
   }) : playerIds = playerIds ?? [hostId],
        foods = foods ?? {},
        createdAt = createdAt ?? DateTime.now(),
        playersInGame = playersInGame ?? {};
+       
+  int get remainingSeconds {
+    if (gameStartTime == null || isGameEnded) return 0;
+    final elapsed = DateTime.now().difference(gameStartTime!).inSeconds;
+    final remaining = gameDurationSeconds - elapsed;
+    return remaining > 0 ? remaining : 0;
+  }
 }
 
 // Clase para representar comida
@@ -330,11 +344,89 @@ class SlitherServer {
     if (room.playersInGame.length >= room.expectedPlayers && room.expectedPlayers > 0) {
       print('✅ Todos los jugadores conectados en sala ${room.code}. ¡Comenzando juego!');
       
+      // Iniciar el temporizador del juego
+      startGameTimer(room);
+      
       // Notificar a todos que pueden comenzar
       broadcastToRoom(room.code, {
         'type': 'allPlayersReady',
+        'remainingSeconds': room.remainingSeconds,
       });
     }
+  }
+  
+  void startGameTimer(GameRoom room) {
+    if (room.gameStartTime != null) return; // Ya iniciado
+    
+    room.gameStartTime = DateTime.now();
+    print('⏱️ Temporizador iniciado para sala ${room.code}: ${GameRoom.gameDurationSeconds} segundos');
+    
+    // Timer que envía actualizaciones cada segundo
+    room.gameTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+      if (room.isGameEnded) {
+        timer.cancel();
+        return;
+      }
+      
+      final remaining = room.remainingSeconds;
+      
+      // Enviar actualización de tiempo y ranking
+      sendRankingUpdate(room);
+      
+      // Si el tiempo terminó, finalizar el juego
+      if (remaining <= 0) {
+        timer.cancel();
+        endGame(room);
+      }
+    });
+  }
+  
+  void sendRankingUpdate(GameRoom room) {
+    // Obtener ranking de jugadores
+    final ranking = getRanking(room);
+    
+    broadcastToRoom(room.code, {
+      'type': 'rankingUpdate',
+      'remainingSeconds': room.remainingSeconds,
+      'ranking': ranking,
+    });
+  }
+  
+  List<Map<String, dynamic>> getRanking(GameRoom room) {
+    // Obtener todos los jugadores de la sala y ordenarlos por score
+    final roomPlayers = players.values
+        .where((p) => p.roomCode == room.code)
+        .toList();
+    
+    roomPlayers.sort((a, b) => b.score.compareTo(a.score));
+    
+    return roomPlayers.map((p) => {
+      'playerId': p.id,
+      'nickname': p.nickname ?? 'Player',
+      'score': p.score,
+    }).toList();
+  }
+  
+  void endGame(GameRoom room) {
+    if (room.isGameEnded) return;
+    
+    room.isGameEnded = true;
+    room.gameTimer?.cancel();
+    
+    print('🏁 Juego terminado en sala ${room.code}');
+    
+    // Obtener ranking final
+    final ranking = getRanking(room);
+    final winner = ranking.isNotEmpty ? ranking[0] : null;
+    
+    print('🏆 Ganador: ${winner?['nickname']} con ${winner?['score']} puntos');
+    
+    // Notificar a todos los jugadores
+    broadcastToRoom(room.code, {
+      'type': 'gameEnd',
+      'ranking': ranking,
+      'winner': winner,
+    });
   }
   
   void handleFoodEaten(String playerId, Map<String, dynamic> data) {
@@ -446,7 +538,8 @@ class SlitherServer {
     }
     
     for (var code in toRemove) {
-      rooms.remove(code);
+      final room = rooms.remove(code);
+      room?.gameTimer?.cancel(); // Cancelar timer si existe
       print('🧹 Sala vacía eliminada: $code');
     }
   }

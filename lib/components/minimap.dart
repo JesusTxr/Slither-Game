@@ -118,3 +118,6 @@ class Minimap extends PositionComponent with HasGameRef<SlitherGame> {
   }
 }
 
+
+
+

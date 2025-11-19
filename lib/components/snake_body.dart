@@ -67,3 +67,6 @@ class SnakeBody extends PositionComponent {
   }
 }
 
+
+
+

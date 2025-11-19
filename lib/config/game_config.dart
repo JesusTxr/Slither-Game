@@ -6,12 +6,12 @@ class GameConfig {
   
   // 🌐 MODO DE SERVIDOR
   // Cambia entre 'local' (red WiFi local) y 'render' (internet/nube)
-  static const String serverMode = 'local'; // 'local' o 'render'
+  static const String serverMode = 'render'; // 'local' o 'render'
   
   // 🚀 URL del servidor en Render (Solo si serverMode = 'render')
   // Reemplaza con tu URL de Render después de desplegar
   // Ver RENDER_DEPLOYMENT.md para instrucciones completas
-  static const String renderServerUrl = 'wss://TU-SERVIDOR.onrender.com';
+  static const String renderServerUrl = 'wss://slither-game.onrender.com';
   
   // ⚙️ CONFIGURACIÓN LOCAL (Solo si serverMode = 'local')
   // Configura SOLO esta variable con la IP de tu PC:

@@ -227,6 +227,10 @@ class SlitherServer {
         case 'playerDeath':
           handlePlayerDeath(playerId);
           break;
+          
+        case 'playerRespawn':
+          handlePlayerRespawn(playerId, data);
+          break;
       }
     } catch (e) {
       print('Error procesando mensaje: $e');
@@ -579,6 +583,28 @@ class SlitherServer {
     
     // Nota: NO desconectamos al jugador, solo notificamos su muerte
     // El cliente manejará la lógica de game over
+  }
+  
+  void handlePlayerRespawn(String playerId, Map<String, dynamic> data) {
+    var player = players[playerId];
+    if (player == null || player.roomCode == null) return;
+    
+    // Actualizar posición del jugador
+    player.x = data['x'];
+    player.y = data['y'];
+    player.score = 0;  // Reiniciar puntuación
+    
+    print('🔄 Jugador $playerId reapareció en sala ${player.roomCode} en (${player.x.toInt()}, ${player.y.toInt()})');
+    
+    // Notificar a todos los jugadores en la sala (incluyendo al que reaparece)
+    broadcastToRoom(player.roomCode!, {
+      'type': 'playerRespawn',
+      'playerId': playerId,
+      'x': player.x,
+      'y': player.y,
+      'score': player.score,
+      'nickname': player.nickname,
+    });
   }
   
   void broadcastPlayerUpdate(Player player) {

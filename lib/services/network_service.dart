@@ -18,6 +18,7 @@ class NetworkService {
   Function(Map<String, dynamic>)? onFoodUpdate;
   Function(Map<String, dynamic>)? onGameStart;  // 🎮 Nuevo callback para inicio de juego
   Function(Map<String, dynamic>)? onPlayerDied;  // 💀 Callback para muerte de jugador
+  Function(Map<String, dynamic>)? onPlayerRespawn;  // 🔄 Callback para respawn de jugador
   Function(Map<String, dynamic>)? onAllPlayersReady;  // 👥 Callback cuando todos los jugadores están listos
   Function(Map<String, dynamic>)? onRankingUpdate;  // 🏆 Callback para actualizaciones de ranking
   Function(Map<String, dynamic>)? onGameEnd;  // 🏁 Callback para fin de juego
@@ -88,6 +89,10 @@ class NetworkService {
         case 'playerDied':
           print('💀 Mensaje de muerte de jugador recibido');
           onPlayerDied?.call(data);
+          break;
+        case 'playerRespawn':
+          print('🔄 Mensaje de respawn de jugador recibido');
+          onPlayerRespawn?.call(data);
           break;
         case 'allPlayersReady':
           print('👥 Todos los jugadores están listos');

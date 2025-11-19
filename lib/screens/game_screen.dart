@@ -64,6 +64,9 @@ class GameScreen extends StatelessWidget {
   }
   
   Widget _buildGameOverOverlay(BuildContext context, SlitherGame game) {
+    // Si el juego terminó (tiempo agotado), solo mostrar botón de menú
+    final gameEnded = game.gameEnded;
+    
     return Container(
       color: Colors.black87,
       child: Center(
@@ -93,13 +96,42 @@ class GameScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 40),
+            // Mostrar botón de respawn solo si el juego NO ha terminado
+            if (!gameEnded) ...[
+              ElevatedButton(
+                onPressed: () {
+                  game.respawnPlayer();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF00ff88),
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 48,
+                    vertical: 16,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  '🔄 Reaparecer',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop();
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00ff88),
-                foregroundColor: Colors.black,
+                backgroundColor: gameEnded 
+                    ? const Color(0xFF00ff88) 
+                    : Colors.grey.shade700,
+                foregroundColor: gameEnded ? Colors.black : Colors.white70,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 48,
                   vertical: 16,

@@ -140,6 +140,7 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
     networkService!.onFoodEaten = _handleFoodEaten;
     networkService!.onFoodUpdate = _handleFoodUpdate;
     networkService!.onPlayerDied = _handlePlayerDied;
+    networkService!.onPlayerRespawn = _handlePlayerRespawn;
     networkService!.onAllPlayersReady = _handleAllPlayersReady;
     networkService!.onRankingUpdate = _handleRankingUpdate;  // 🏆
     networkService!.onGameEnd = _handleGameEnd;  // 🏁
@@ -295,6 +296,42 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
     if (player != null) {
       player.removeFromParent();
       print('✅ Jugador remoto $playerId removido del juego');
+    }
+  }
+  
+  void _handlePlayerRespawn(Map<String, dynamic> data) {
+    final playerId = data['playerId'];
+    final x = data['x'];
+    final y = data['y'];
+    final score = data['score'] ?? 0;
+    final nickname = data['nickname'] ?? 'Player';
+    
+    // No hacer nada si es el jugador local (ya se maneja en respawnPlayer)
+    if (playerId == networkService!.playerId) {
+      print('🔄 Respawn local confirmado por servidor');
+      return;
+    }
+    
+    print('🔄 Jugador $playerId reapareció en ($x, $y)');
+    
+    // Si el jugador remoto ya existe, actualizar su posición y score
+    var remotePlayer = remotePlayers[playerId];
+    if (remotePlayer != null) {
+      remotePlayer.updatePosition(Vector2(x, y));
+      remotePlayer.score = score;
+      print('✅ Jugador remoto $playerId actualizado');
+    } else {
+      // Si no existe, crear un nuevo RemotePlayer (fue eliminado al morir)
+      remotePlayer = RemotePlayer(
+        id: playerId,
+        nickname: nickname,
+        position: Vector2(x, y),
+        game: this,
+      );
+      remotePlayer.score = score;
+      world.add(remotePlayer);
+      remotePlayers[playerId] = remotePlayer;
+      print('✅ Jugador remoto $playerId recreado después de respawn');
     }
   }
   
@@ -494,6 +531,46 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
     
     // Pausar el juego (detener el update)
     pauseEngine();
+  }
+  
+  /// Reaparece el jugador después de morir
+  void respawnPlayer() {
+    print('🔄 Reapareciendo jugador...');
+    
+    // Encontrar una posición aleatoria segura
+    final random = Random();
+    final spawnX = (random.nextDouble() * size.x * 0.8) + size.x * 0.1;
+    final spawnY = (random.nextDouble() * size.y * 0.8) + size.y * 0.1;
+    final spawnPosition = Vector2(spawnX, spawnY);
+    
+    // Reiniciar puntuación (puedes ajustar esto para mantener algo de puntaje)
+    score = 0;
+    
+    // Crear nuevo PlayerHead
+    _playerHead = PlayerHead(
+      position: spawnPosition,
+      game: this,
+      skin: currentSkin,
+    );
+    world.add(_playerHead!);
+    
+    // Limpiar el cuerpo anterior (por si acaso)
+    body.clear();
+    
+    // Notificar al servidor del respawn
+    if (isMultiplayer && networkService != null) {
+      networkService!.sendMessage({
+        'type': 'playerRespawn',
+        'x': spawnPosition.x,
+        'y': spawnPosition.y,
+      });
+    }
+    
+    // Quitar overlay y reanudar juego
+    overlays.remove('GameOver');
+    resumeEngine();
+    
+    print('✅ Jugador reaparecido en (${spawnPosition.x.toInt()}, ${spawnPosition.y.toInt()})');
   }
   
   @override

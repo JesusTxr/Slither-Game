@@ -39,11 +39,11 @@ class BodySegment extends PositionComponent
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
     canvas.drawCircle(center + const Offset(2, 2), radius, shadowPaint);
     
-    // 2. Cuerpo base más grande para cubrir espacios
+    // 2. Cuerpo base ligeramente más grande para cubrir espacios
     final basePaint = Paint()
       ..color = skin.primaryColor
       ..style = PaintingStyle.fill;
-    canvas.drawCircle(center, radius * 1.2, basePaint);
+    canvas.drawCircle(center, radius * 1.08, basePaint);
     
     // 3. Gradiente radial mejorado para efecto 3D
     final gradientPaint = Paint()

@@ -18,7 +18,7 @@ class RemotePlayer extends PositionComponent
   final SnakeSkin skin;
     
   final double _speed = 150;
-  final double segmentSpacing = 0.5; // Muy reducido para segmentos casi superpuestos
+  final double segmentSpacing = 1.5; // Espaciado óptimo para aspecto de gusano
   double baseRadius = 10;
   double get currentRadius => baseRadius + (bodyLength * 0.1);
   
@@ -62,11 +62,11 @@ class RemotePlayer extends PositionComponent
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
     canvas.drawCircle(center + const Offset(3, 3), radius, shadowPaint);
     
-    // 2. Cuerpo base más grande para conexión perfecta con el cuerpo
+    // 2. Cuerpo base ligeramente más grande para conexión con el cuerpo
     final basePaint = Paint()
       ..color = skin.primaryColor
       ..style = PaintingStyle.fill;
-    canvas.drawCircle(center, radius * 1.25, basePaint);
+    canvas.drawCircle(center, radius * 1.12, basePaint);
     
     // 3. Gradiente radial mejorado para efecto 3D
     final gradientPaint = Paint()

@@ -24,17 +24,21 @@ class SnakeSkin {
   /// Crea un gradiente para el cuerpo
   Paint getBodyPaint(double radius) {
     return Paint()
-      ..shader = RadialGradient(
-        colors: [
+      ..shader = Gradient.radial(
+        Offset.zero,
+        radius,
+        [
           secondaryColor,
           primaryColor,
-          primaryColor.withOpacity(0.8),
+          Color.fromRGBO(
+            primaryColor.red,
+            primaryColor.green,
+            primaryColor.blue,
+            0.8,
+          ),
         ],
-        stops: const [0.0, 0.7, 1.0],
-      ).createShader(Rect.fromCircle(
-        center: Offset.zero,
-        radius: radius,
-      ))
+        [0.0, 0.7, 1.0],
+      )
       ..style = PaintingStyle.fill;
   }
   

@@ -54,8 +54,8 @@ class GameScreen extends StatelessWidget {
           // Widget de ranking (solo en multijugador)
           if (isMultiplayer)
             Positioned(
-              top: 90,
-              left: 20,
+              top: 80,
+              left: 10,
               child: _RankingDisplay(game: game),
             ),
         ],
@@ -337,43 +337,43 @@ class _RankingDisplayState extends State<_RankingDisplay> {
     final remainingTime = widget.game.remainingSeconds;
     
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.black54,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF00ff88), width: 2),
+        color: Colors.black.withOpacity(0.65),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFF00ff88).withOpacity(0.6), width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Temporizador
+          // Temporizador más compacto
           Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.timer, color: Color(0xFF00ff88), size: 20),
-              const SizedBox(width: 8),
+              const Icon(Icons.timer_outlined, color: Color(0xFF00ff88), size: 14),
+              const SizedBox(width: 4),
               Text(
                 _formatTime(remainingTime),
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 24,
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
                   fontFamily: 'monospace',
+                  letterSpacing: 1,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          const Text(
-            'TOP 3',
-            style: TextStyle(
-              color: Color(0xFF00ff88),
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+          const SizedBox(height: 6),
+          // Línea separadora sutil
+          Container(
+            height: 1,
+            width: 100,
+            color: const Color(0xFF00ff88).withOpacity(0.3),
           ),
-          const SizedBox(height: 8),
-          // Top 3
+          const SizedBox(height: 6),
+          // Top 3 compacto
           ...top3.asMap().entries.map((entry) {
             final index = entry.key;
             final player = entry.value;
@@ -385,32 +385,40 @@ class _RankingDisplayState extends State<_RankingDisplay> {
             else if (index == 2) medal = '🥉';
             
             return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2),
+              padding: const EdgeInsets.only(bottom: 3),
               child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     medal,
-                    style: const TextStyle(fontSize: 16),
+                    style: const TextStyle(fontSize: 12),
                   ),
-                  const SizedBox(width: 8),
-                  SizedBox(
-                    width: 120,
+                  const SizedBox(width: 4),
+                  Container(
+                    constraints: const BoxConstraints(maxWidth: 80),
                     child: Text(
                       player['nickname'],
                       style: TextStyle(
                         color: isCurrentPlayer ? const Color(0xFF00ff88) : Colors.white,
-                        fontSize: 14,
-                        fontWeight: isCurrentPlayer ? FontWeight.bold : FontWeight.normal,
+                        fontSize: 11,
+                        fontWeight: isCurrentPlayer ? FontWeight.bold : FontWeight.w500,
+                        shadows: isCurrentPlayer ? [
+                          const Shadow(
+                            color: Color(0xFF00ff88),
+                            blurRadius: 4,
+                          ),
+                        ] : null,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 6),
                   Text(
                     '${player['score']}',
                     style: const TextStyle(
                       color: Colors.white70,
-                      fontSize: 14,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],

@@ -552,6 +552,9 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
     );
     world.add(_playerHead!);
     
+    // 🎥 IMPORTANTE: Actualizar la cámara para seguir al nuevo jugador
+    cameraComponent.follow(_playerHead!);
+    
     // Limpiar el cuerpo anterior (por si acaso)
     body.clear();
     

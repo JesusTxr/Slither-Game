@@ -14,7 +14,10 @@ class BodySegment extends PositionComponent
     required super.position,
     this.ownerId,
     this.skin = SnakeSkins.classic,
-  }) : super(anchor: Anchor.center);
+  }) : super(
+        anchor: Anchor.center,
+        priority: 0, // Prioridad baja para renderizar detrás de la cabeza
+      );
     
   bool _hitboxAdded = false;
 
@@ -40,7 +43,7 @@ class BodySegment extends PositionComponent
     final basePaint = Paint()
       ..color = skin.primaryColor
       ..style = PaintingStyle.fill;
-    canvas.drawCircle(center, radius * 1.05, basePaint);
+    canvas.drawCircle(center, radius * 1.2, basePaint);
     
     // 3. Gradiente radial mejorado para efecto 3D
     final gradientPaint = Paint()

@@ -18,7 +18,7 @@ class RemotePlayer extends PositionComponent
   final SnakeSkin skin;
     
   final double _speed = 150;
-  final double segmentSpacing = 2.0; // Reducido para que los segmentos estén más juntos
+  final double segmentSpacing = 0.5; // Muy reducido para segmentos casi superpuestos
   double baseRadius = 10;
   double get currentRadius => baseRadius + (bodyLength * 0.1);
   
@@ -34,7 +34,11 @@ class RemotePlayer extends PositionComponent
     this.score = 0,
     SnakeSkin? skin,
   }) : skin = skin ?? SnakeSkins.random(),
-       super(position: position, anchor: Anchor.center);
+       super(
+         position: position, 
+         anchor: Anchor.center,
+         priority: 10, // Prioridad alta para renderizar por encima del cuerpo
+       );
 
   @override
   Future<void> onLoad() async {
@@ -62,7 +66,7 @@ class RemotePlayer extends PositionComponent
     final basePaint = Paint()
       ..color = skin.primaryColor
       ..style = PaintingStyle.fill;
-    canvas.drawCircle(center, radius * 1.08, basePaint);
+    canvas.drawCircle(center, radius * 1.25, basePaint);
     
     // 3. Gradiente radial mejorado para efecto 3D
     final gradientPaint = Paint()
@@ -145,9 +149,9 @@ class RemotePlayer extends PositionComponent
   }
   
   void _drawEyes(Canvas canvas, Offset center, double radius, double angle) {
-    // Tamaño de los ojos basado en el radio
-    final eyeSize = radius * 0.25;
-    final eyeDistance = radius * 0.4;
+    // Tamaño de los ojos basado en el radio (más grandes para mejor visibilidad)
+    final eyeSize = radius * 0.35;
+    final eyeDistance = radius * 0.45;
     
     // Posición de los ojos (relativa a la dirección)
     final eyeOffset = Offset(
@@ -173,9 +177,15 @@ class RemotePlayer extends PositionComponent
   void _drawEye(Canvas canvas, Offset position, double size, double angle) {
     // Sombra del ojo
     final eyeShadowPaint = Paint()
-      ..color = const Color(0xFF000000).withOpacity(0.2)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
-    canvas.drawCircle(position + const Offset(1, 1), size, eyeShadowPaint);
+      ..color = const Color(0xFF000000).withOpacity(0.3)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+    canvas.drawCircle(position + const Offset(1.5, 1.5), size * 1.1, eyeShadowPaint);
+    
+    // Contorno blanco para que el ojo resalte
+    final whiteOutlinePaint = Paint()
+      ..color = const Color(0xFFFFFFFF)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(position, size * 1.15, whiteOutlinePaint);
     
     // Blanco del ojo con gradiente sutil
     final whitePaint = Paint()

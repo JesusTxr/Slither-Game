@@ -550,8 +550,9 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
     final spawnY = (random.nextDouble() * size.y * 0.8) + size.y * 0.1;
     final spawnPosition = Vector2(spawnX, spawnY);
     
-    // Reiniciar puntuación (puedes ajustar esto para mantener algo de puntaje)
+    // Reiniciar puntuación y tamaño del gusano
     score = 0;
+    bodyLength = 5; // Volver al tamaño inicial
     
     // Crear nuevo PlayerHead
     _playerHead = PlayerHead(

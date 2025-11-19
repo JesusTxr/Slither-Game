@@ -323,10 +323,9 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
     } else {
       // Si no existe, crear un nuevo RemotePlayer (fue eliminado al morir)
       remotePlayer = RemotePlayer(
-        id: playerId,
+        playerId: playerId,
         nickname: nickname,
         position: Vector2(x, y),
-        game: this,
       );
       remotePlayer.score = score;
       world.add(remotePlayer);
@@ -548,8 +547,7 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
     
     // Crear nuevo PlayerHead
     _playerHead = PlayerHead(
-      position: spawnPosition,
-      game: this,
+      startPosition: spawnPosition,
       skin: currentSkin,
     );
     world.add(_playerHead!);
@@ -559,11 +557,7 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
     
     // Notificar al servidor del respawn
     if (isMultiplayer && networkService != null) {
-      networkService!.sendMessage({
-        'type': 'playerRespawn',
-        'x': spawnPosition.x,
-        'y': spawnPosition.y,
-      });
+      networkService!.sendPlayerRespawn(spawnPosition.x, spawnPosition.y);
     }
     
     // Quitar overlay y reanudar juego

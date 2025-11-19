@@ -2,7 +2,7 @@ import 'dart:ui';
 import 'dart:math' as math;
 
 import 'package:flame/components.dart';
-import 'package:flutter/material.dart' hide Image;
+import 'package:flutter/material.dart' hide Image, Gradient;
 import 'package:slither_game/components/body_segment.dart';
 import 'package:slither_game/game.dart';
 import 'package:slither_game/config/snake_skins.dart';

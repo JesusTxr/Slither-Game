@@ -181,6 +181,17 @@ class NetworkService {
     }));
   }
   
+  void sendPlayerRespawn(double x, double y) {
+    if (!isConnected) return;
+    
+    print('🔄 Notificando al servidor sobre el respawn');
+    _channel!.sink.add(jsonEncode({
+      'type': 'playerRespawn',
+      'x': x,
+      'y': y,
+    }));
+  }
+  
   void disconnect() {
     _channel?.sink.close();
     _channel = null;

@@ -1,24 +1,19 @@
 import 'dart:ui';
+import 'dart:math' as math;
 
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:slither_game/components/food.dart';
 import 'package:slither_game/components/body_segment.dart';
 import 'package:slither_game/game.dart';
+import 'package:slither_game/config/snake_skins.dart';
 
 class PlayerHead extends PositionComponent
     with HasGameReference<SlitherGame>, CollisionCallbacks {
-  PlayerHead({required Vector2 startPosition})
+  PlayerHead({required Vector2 startPosition, this.skin = SnakeSkins.classic})
     : super(position: startPosition, anchor: Anchor.center);
 
-  final _paint = Paint()
-    ..color = const Color(0xFF00FF00)
-    ..style = PaintingStyle.fill;
-  
-  final _borderPaint = Paint()
-    ..color = const Color(0xFF00AA00)
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 2.0;
+  final SnakeSkin skin;
     
   final double _speed = 150;
   final double segmentSpacing = 2.0; // Reducido para que los segmentos estén más juntos
@@ -36,11 +31,80 @@ class PlayerHead extends PositionComponent
     final center = (size / 2).toOffset();
     final radius = size.x / 2;
     
-    // Dibujar la cabeza principal
-    canvas.drawCircle(center, radius, _paint);
+    // Calcular ángulo de dirección
+    final direction = game.targetDirection;
+    final angle = math.atan2(direction.y, direction.x);
+    
+    // Dibujar la cabeza principal con gradiente
+    final bodyPaint = skin.getBodyPaint(radius);
+    canvas.drawCircle(center, radius, bodyPaint);
     
     // Dibujar borde para definición
-    canvas.drawCircle(center, radius, _borderPaint);
+    canvas.drawCircle(center, radius, skin.getBorderPaint());
+    
+    // Dibujar ojos
+    _drawEyes(canvas, center, radius, angle);
+  }
+  
+  void _drawEyes(Canvas canvas, Offset center, double radius, double angle) {
+    // Tamaño de los ojos basado en el radio
+    final eyeSize = radius * 0.25;
+    final eyeDistance = radius * 0.4;
+    
+    // Posición de los ojos (relativa a la dirección)
+    final eyeOffset = Offset(
+      math.cos(angle) * eyeDistance,
+      math.sin(angle) * eyeDistance,
+    );
+    
+    // Perpendicular para separar los ojos
+    final perpendicular = Offset(
+      -math.sin(angle) * (radius * 0.35),
+      math.cos(angle) * (radius * 0.35),
+    );
+    
+    // Ojo izquierdo
+    final leftEyePos = center + eyeOffset + perpendicular;
+    _drawEye(canvas, leftEyePos, eyeSize, angle);
+    
+    // Ojo derecho
+    final rightEyePos = center + eyeOffset - perpendicular;
+    _drawEye(canvas, rightEyePos, eyeSize, angle);
+  }
+  
+  void _drawEye(Canvas canvas, Offset position, double size, double angle) {
+    // Blanco del ojo
+    final whitePaint = Paint()
+      ..color = skin.eyeColor
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(position, size, whitePaint);
+    
+    // Borde del ojo
+    final eyeBorderPaint = Paint()
+      ..color = skin.eyeColor.withOpacity(0.5)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+    canvas.drawCircle(position, size, eyeBorderPaint);
+    
+    // Pupila (ligeramente hacia adelante)
+    final pupilOffset = Offset(
+      math.cos(angle) * (size * 0.3),
+      math.sin(angle) * (size * 0.3),
+    );
+    final pupilPaint = Paint()
+      ..color = skin.pupilColor
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(position + pupilOffset, size * 0.4, pupilPaint);
+    
+    // Brillo en el ojo
+    final shinePaint = Paint()
+      ..color = const Color(0xFFFFFFFF).withOpacity(0.6)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(
+      position + Offset(-size * 0.2, -size * 0.2),
+      size * 0.25,
+      shinePaint,
+    );
   }
 
   @override

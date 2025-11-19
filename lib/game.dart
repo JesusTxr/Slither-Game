@@ -13,6 +13,7 @@ import 'package:slither_game/components/minimap.dart';
 import 'package:slither_game/components/player_head.dart';
 import 'package:slither_game/components/remote_player.dart';
 import 'package:slither_game/config/game_config.dart';
+import 'package:slither_game/config/snake_skins.dart';
 import 'package:slither_game/services/network_service.dart';
 
 class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
@@ -52,9 +53,12 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
   List<Map<String, dynamic>> ranking = [];
   int remainingSeconds = 300; // 5 minutos por defecto
   bool gameEnded = false;
+  
+  // 🎨 Sistema de skins
+  SnakeSkin currentSkin = SnakeSkins.classic;
 
   // Constructor
-  SlitherGame({this.roomCode});
+  SlitherGame({this.roomCode, SnakeSkin? skin}) : currentSkin = skin ?? SnakeSkins.classic;
 
   @override
   Future<void> onLoad() async {
@@ -76,7 +80,7 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
     // Asegurarse de que el playerHead esté inicializado (fallback si el servidor falló)
     if (_playerHead == null) {
       final Vector2 worldCenter = worldSize / 2;
-      playerHead = PlayerHead(startPosition: worldCenter);
+      playerHead = PlayerHead(startPosition: worldCenter, skin: currentSkin);
       await world.add(playerHead);
       print('✅ PlayerHead inicializado en modo solo (fallback)');
     }
@@ -189,7 +193,7 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
     print('✅ Recibido init del servidor');
     // Crear jugador local en la posición del servidor
     final startPos = Vector2(data['x'], data['y']);
-    playerHead = PlayerHead(startPosition: startPos);
+    playerHead = PlayerHead(startPosition: startPos, skin: currentSkin);
     world.add(playerHead);
     print('🎮 Jugador creado en posición: $startPos');
     
@@ -419,6 +423,7 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
       final segment = BodySegment(
         position: playerHead.position,
         ownerId: networkService?.playerId,  // Marcar mis propios segmentos
+        skin: currentSkin,  // 🎨 Usar el skin actual
       );
       world.add(segment);
       body.add(segment);

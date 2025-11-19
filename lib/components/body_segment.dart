@@ -3,24 +3,18 @@ import 'dart:ui';
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:slither_game/game.dart';
+import 'package:slither_game/config/snake_skins.dart';
 
 class BodySegment extends PositionComponent 
     with HasGameReference<SlitherGame>, CollisionCallbacks {
   final String? ownerId; // ID del jugador dueño del segmento
+  final SnakeSkin skin;
   
   BodySegment({
     required super.position,
     this.ownerId,
+    this.skin = SnakeSkins.classic,
   }) : super(anchor: Anchor.center);
-
-  final _paint = Paint()
-    ..color = const Color(0xFF00AA00)
-    ..style = PaintingStyle.fill;
-  
-  final _borderPaint = Paint()
-    ..color = const Color(0xFF006600)
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 1.5;
     
   bool _hitboxAdded = false;
 
@@ -36,11 +30,12 @@ class BodySegment extends PositionComponent
     final center = (size / 2).toOffset();
     final radius = size.x / 2;
     
-    // Dibujar el cuerpo principal
-    canvas.drawCircle(center, radius, _paint);
+    // Dibujar el cuerpo principal con gradiente
+    final bodyPaint = skin.getBodyPaint(radius);
+    canvas.drawCircle(center, radius, bodyPaint);
     
-    // Dibujar borde oscuro para definición
-    canvas.drawCircle(center, radius, _borderPaint);
+    // Dibujar borde para definición
+    canvas.drawCircle(center, radius, skin.getBorderPaint());
   }
 
   @override

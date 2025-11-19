@@ -1,9 +1,11 @@
 import 'dart:ui';
+import 'dart:math' as math;
 
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart' hide Image;
 import 'package:slither_game/components/body_segment.dart';
 import 'package:slither_game/game.dart';
+import 'package:slither_game/config/snake_skins.dart';
 
 class RemotePlayer extends PositionComponent
     with HasGameReference<SlitherGame> {
@@ -13,15 +15,7 @@ class RemotePlayer extends PositionComponent
   List<Vector2> pathPoints = [];
   int bodyLength;
   int score;
-  
-  final _paint = Paint()
-    ..color = const Color(0xFF0088FF)
-    ..style = PaintingStyle.fill; // Azul para otros jugadores
-  
-  final _borderPaint = Paint()
-    ..color = const Color(0xFF0055AA)
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 2.0;
+  final SnakeSkin skin;
     
   final double _speed = 150;
   final double segmentSpacing = 2.0; // Reducido para que los segmentos estén más juntos
@@ -38,7 +32,9 @@ class RemotePlayer extends PositionComponent
     required Vector2 position,
     this.bodyLength = 5,
     this.score = 0,
-  }) : super(position: position, anchor: Anchor.center);
+    SnakeSkin? skin,
+  }) : skin = skin ?? SnakeSkins.random(),
+       super(position: position, anchor: Anchor.center);
 
   @override
   Future<void> onLoad() async {
@@ -53,11 +49,18 @@ class RemotePlayer extends PositionComponent
     final center = (size / 2).toOffset();
     final radius = size.x / 2;
     
-    // Dibujar la cabeza principal
-    canvas.drawCircle(center, radius, _paint);
+    // Calcular ángulo de dirección
+    final angle = _calculateDirection();
+    
+    // Dibujar la cabeza principal con gradiente
+    final bodyPaint = skin.getBodyPaint(radius);
+    canvas.drawCircle(center, radius, bodyPaint);
     
     // Dibujar borde para definición
-    canvas.drawCircle(center, radius, _borderPaint);
+    canvas.drawCircle(center, radius, skin.getBorderPaint());
+    
+    // Dibujar ojos
+    _drawEyes(canvas, center, radius, angle);
     
     // Dibujar el nickname encima
     final textPainter = TextPainter(
@@ -67,6 +70,13 @@ class RemotePlayer extends PositionComponent
           color: Color(0xFFFFFFFF),
           fontSize: 12,
           fontWeight: FontWeight.bold,
+          shadows: [
+            Shadow(
+              color: Colors.black,
+              offset: Offset(1, 1),
+              blurRadius: 2,
+            ),
+          ],
         ),
       ),
       textDirection: TextDirection.ltr,
@@ -78,6 +88,79 @@ class RemotePlayer extends PositionComponent
         (size.x - textPainter.width) / 2,
         -textPainter.height - 10,
       ),
+    );
+  }
+  
+  double _calculateDirection() {
+    if (pathPoints.length >= 2) {
+      final current = pathPoints[pathPoints.length - 1];
+      final previous = pathPoints[pathPoints.length - 2];
+      final direction = current - previous;
+      if (direction.length2 > 0) {
+        return math.atan2(direction.y, direction.x);
+      }
+    }
+    return 0.0; // Dirección por defecto (derecha)
+  }
+  
+  void _drawEyes(Canvas canvas, Offset center, double radius, double angle) {
+    // Tamaño de los ojos basado en el radio
+    final eyeSize = radius * 0.25;
+    final eyeDistance = radius * 0.4;
+    
+    // Posición de los ojos (relativa a la dirección)
+    final eyeOffset = Offset(
+      math.cos(angle) * eyeDistance,
+      math.sin(angle) * eyeDistance,
+    );
+    
+    // Perpendicular para separar los ojos
+    final perpendicular = Offset(
+      -math.sin(angle) * (radius * 0.35),
+      math.cos(angle) * (radius * 0.35),
+    );
+    
+    // Ojo izquierdo
+    final leftEyePos = center + eyeOffset + perpendicular;
+    _drawEye(canvas, leftEyePos, eyeSize, angle);
+    
+    // Ojo derecho
+    final rightEyePos = center + eyeOffset - perpendicular;
+    _drawEye(canvas, rightEyePos, eyeSize, angle);
+  }
+  
+  void _drawEye(Canvas canvas, Offset position, double size, double angle) {
+    // Blanco del ojo
+    final whitePaint = Paint()
+      ..color = skin.eyeColor
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(position, size, whitePaint);
+    
+    // Borde del ojo
+    final eyeBorderPaint = Paint()
+      ..color = skin.eyeColor.withOpacity(0.5)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+    canvas.drawCircle(position, size, eyeBorderPaint);
+    
+    // Pupila (ligeramente hacia adelante)
+    final pupilOffset = Offset(
+      math.cos(angle) * (size * 0.3),
+      math.sin(angle) * (size * 0.3),
+    );
+    final pupilPaint = Paint()
+      ..color = skin.pupilColor
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(position + pupilOffset, size * 0.4, pupilPaint);
+    
+    // Brillo en el ojo
+    final shinePaint = Paint()
+      ..color = const Color(0xFFFFFFFF).withOpacity(0.6)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(
+      position + Offset(-size * 0.2, -size * 0.2),
+      size * 0.25,
+      shinePaint,
     );
   }
 
@@ -122,6 +205,7 @@ class RemotePlayer extends PositionComponent
       final segment = BodySegment(
         position: position,
         ownerId: playerId,  // Marcar el segmento con el ID del jugador
+        skin: skin,  // 🎨 Usar el mismo skin que la cabeza
       );
       game.world.add(segment);
       body.add(segment);

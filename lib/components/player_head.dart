@@ -35,14 +35,55 @@ class PlayerHead extends PositionComponent
     final direction = game.targetDirection;
     final angle = math.atan2(direction.y, direction.x);
     
-    // Dibujar la cabeza principal con gradiente
-    final bodyPaint = skin.getBodyPaint(radius);
-    canvas.drawCircle(center, radius, bodyPaint);
+    // 1. Sombra suave para profundidad
+    final shadowPaint = Paint()
+      ..color = const Color(0xFF000000).withOpacity(0.2)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
+    canvas.drawCircle(center + const Offset(3, 3), radius, shadowPaint);
     
-    // Dibujar borde para definición
-    canvas.drawCircle(center, radius, skin.getBorderPaint());
+    // 2. Cuerpo base más grande para conexión perfecta con el cuerpo
+    final basePaint = Paint()
+      ..color = skin.primaryColor
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(center, radius * 1.08, basePaint);
     
-    // Dibujar ojos
+    // 3. Gradiente radial mejorado para efecto 3D
+    final gradientPaint = Paint()
+      ..shader = Gradient.radial(
+        center - Offset(radius * 0.3, radius * 0.3), // Luz desde arriba-izquierda
+        radius * 1.3,
+        [
+          Color.lerp(skin.secondaryColor, const Color(0xFFFFFFFF), 0.5)!,
+          skin.secondaryColor,
+          skin.primaryColor,
+          Color.lerp(skin.primaryColor, const Color(0xFF000000), 0.25)!,
+        ],
+        [0.0, 0.25, 0.65, 1.0],
+      );
+    canvas.drawCircle(center, radius, gradientPaint);
+    
+    // 4. Brillo especular (reflejo de luz) - más pronunciado en la cabeza
+    final shinePaint = Paint()
+      ..shader = Gradient.radial(
+        center - Offset(radius * 0.4, radius * 0.4),
+        radius * 0.6,
+        [
+          const Color(0xFFFFFFFF).withOpacity(0.5),
+          const Color(0xFFFFFFFF).withOpacity(0.2),
+          const Color(0xFFFFFFFF).withOpacity(0.0),
+        ],
+        [0.0, 0.4, 1.0],
+      );
+    canvas.drawCircle(center, radius, shinePaint);
+    
+    // 5. Borde oscuro para definición
+    final borderPaint = Paint()
+      ..color = Color.lerp(skin.primaryColor, const Color(0xFF000000), 0.5)!.withOpacity(0.7)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5;
+    canvas.drawCircle(center, radius - 1, borderPaint);
+    
+    // 6. Dibujar ojos
     _drawEyes(canvas, center, radius, angle);
   }
   
@@ -73,17 +114,30 @@ class PlayerHead extends PositionComponent
   }
   
   void _drawEye(Canvas canvas, Offset position, double size, double angle) {
-    // Blanco del ojo
+    // Sombra del ojo
+    final eyeShadowPaint = Paint()
+      ..color = const Color(0xFF000000).withOpacity(0.2)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
+    canvas.drawCircle(position + const Offset(1, 1), size, eyeShadowPaint);
+    
+    // Blanco del ojo con gradiente sutil
     final whitePaint = Paint()
-      ..color = skin.eyeColor
-      ..style = PaintingStyle.fill;
+      ..shader = Gradient.radial(
+        position - Offset(size * 0.2, size * 0.2),
+        size,
+        [
+          skin.eyeColor,
+          Color.lerp(skin.eyeColor, const Color(0xFF000000), 0.1)!,
+        ],
+        [0.0, 1.0],
+      );
     canvas.drawCircle(position, size, whitePaint);
     
-    // Borde del ojo
+    // Borde del ojo más pronunciado
     final eyeBorderPaint = Paint()
-      ..color = skin.eyeColor.withOpacity(0.5)
+      ..color = Color.lerp(skin.eyeColor, const Color(0xFF000000), 0.4)!
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
+      ..strokeWidth = 1.5;
     canvas.drawCircle(position, size, eyeBorderPaint);
     
     // Pupila (ligeramente hacia adelante)
@@ -92,18 +146,43 @@ class PlayerHead extends PositionComponent
       math.sin(angle) * (size * 0.3),
     );
     final pupilPaint = Paint()
-      ..color = skin.pupilColor
-      ..style = PaintingStyle.fill;
+      ..shader = Gradient.radial(
+        position + pupilOffset,
+        size * 0.4,
+        [
+          skin.pupilColor,
+          Color.lerp(skin.pupilColor, const Color(0xFF000000), 0.3)!,
+        ],
+        [0.7, 1.0],
+      );
     canvas.drawCircle(position + pupilOffset, size * 0.4, pupilPaint);
     
-    // Brillo en el ojo
+    // Brillo principal en el ojo
     final shinePaint = Paint()
-      ..color = const Color(0xFFFFFFFF).withOpacity(0.6)
+      ..shader = Gradient.radial(
+        position + Offset(-size * 0.15, -size * 0.15),
+        size * 0.35,
+        [
+          const Color(0xFFFFFFFF).withOpacity(0.8),
+          const Color(0xFFFFFFFF).withOpacity(0.3),
+          const Color(0xFFFFFFFF).withOpacity(0.0),
+        ],
+        [0.0, 0.6, 1.0],
+      );
+    canvas.drawCircle(
+      position + Offset(-size * 0.15, -size * 0.15),
+      size * 0.35,
+      shinePaint,
+    );
+    
+    // Brillo secundario (pequeño)
+    final shineSecondaryPaint = Paint()
+      ..color = const Color(0xFFFFFFFF).withOpacity(0.4)
       ..style = PaintingStyle.fill;
     canvas.drawCircle(
-      position + Offset(-size * 0.2, -size * 0.2),
-      size * 0.25,
-      shinePaint,
+      position + Offset(size * 0.25, size * 0.3),
+      size * 0.15,
+      shineSecondaryPaint,
     );
   }
 

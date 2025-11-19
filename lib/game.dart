@@ -294,8 +294,16 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
     // Remover al jugador remoto del juego
     final player = remotePlayers.remove(playerId);
     if (player != null) {
+      // ⚠️ IMPORTANTE: Eliminar todos los segmentos del cuerpo
+      final segmentCount = player.body.length;
+      for (var segment in player.body) {
+        segment.removeFromParent();
+      }
+      player.body.clear();
+      
+      // Eliminar la cabeza
       player.removeFromParent();
-      print('✅ Jugador remoto $playerId removido del juego');
+      print('✅ Jugador remoto $playerId y sus $segmentCount segmentos removidos del juego');
     }
   }
   
@@ -555,7 +563,10 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
     // 🎥 IMPORTANTE: Actualizar la cámara para seguir al nuevo jugador
     cameraComponent.follow(_playerHead!);
     
-    // Limpiar el cuerpo anterior (por si acaso)
+    // 🧹 Limpiar el cuerpo anterior (eliminar segmentos del mundo)
+    for (var segment in body) {
+      segment.removeFromParent();
+    }
     body.clear();
     
     // Notificar al servidor del respawn

@@ -11,8 +11,10 @@ import 'package:slither_game/components/food.dart';
 import 'package:slither_game/components/joystick.dart';
 import 'package:slither_game/components/minimap.dart';
 import 'package:slither_game/components/player_head.dart';
+import 'package:slither_game/components/power_up.dart';
 import 'package:slither_game/components/remote_player.dart';
 import 'package:slither_game/config/game_config.dart';
+import 'package:slither_game/config/power_up_types.dart';
 import 'package:slither_game/config/snake_skins.dart';
 import 'package:slither_game/services/network_service.dart';
 
@@ -34,6 +36,21 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
   double _foodSpawnTimer = 0;
   final double _foodSpawnInterval = 1.5; // Generar comida cada 1.5 segundos
   final int _foodPerSpawn = 10; // Cuántas comidas generar por vez
+  
+  // 🎁 Sistema de Power-Ups
+  double _powerUpSpawnTimer = 0;
+  final double _powerUpSpawnInterval = 20.0; // Nuevo power-up cada 20 segundos
+  final int _maxPowerUpsInMap = 5; // Máximo 5 power-ups simultáneos
+  PowerUpType? activePowerUp;
+  double powerUpRemainingTime = 0;
+  double powerUpTotalDuration = 0;
+  bool isShieldActive = false;
+  bool isGhostMode = false;
+  bool isMagnetActive = false;
+  double speedMultiplier = 1.0;
+  double pointsMultiplier = 1.0;
+  double _powerUpCooldown = 0;
+  final double _powerUpCooldownDuration = 2.0; // 2 segundos entre power-ups
 
   // World y CameraComponent modernos
   late final World world;
@@ -445,7 +462,8 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
 
   // Método para hacer crecer al gusano cuando come
   void eatFood({String? foodId}) {
-    score++; // Aumentar puntuación
+    // Aumentar puntuación (con multiplicador si está activo Double Points)
+    score += pointsMultiplier.round();
     
     // Crecer 1 segmento cada 3 puntos (crecimiento más lento)
     if (score % 3 == 0) {
@@ -515,6 +533,9 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
         }
       }
     }
+    
+    // 🎁 Sistema de Power-Ups
+    _updatePowerUpSystem(dt);
   }
   
   // Método llamado cuando el jugador muere
@@ -581,6 +602,223 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
     
     print('✅ Jugador reaparecido en (${spawnPosition.x.toInt()}, ${spawnPosition.y.toInt()})');
   }
+  
+  // 🎁 ==================== SISTEMA DE POWER-UPS ====================
+  
+  void _updatePowerUpSystem(double dt) {
+    // Actualizar cooldown
+    if (_powerUpCooldown > 0) {
+      _powerUpCooldown -= dt;
+    }
+    
+    // Spawn de power-ups
+    _powerUpSpawnTimer += dt;
+    if (_powerUpSpawnTimer >= _powerUpSpawnInterval) {
+      _powerUpSpawnTimer = 0;
+      _spawnPowerUp();
+    }
+    
+    // Actualizar temporizador del power-up activo
+    if (activePowerUp != null && powerUpRemainingTime > 0) {
+      powerUpRemainingTime -= dt;
+      
+      if (powerUpRemainingTime <= 0) {
+        _deactivatePowerUp();
+      }
+    }
+    
+    // 🧲 Efecto del imán (atraer comida cercana)
+    if (isMagnetActive) {
+      _applyMagnetEffect();
+    }
+  }
+  
+  void _spawnPowerUp() {
+    final powerUpsInMap = world.children.whereType<PowerUp>().length;
+    if (powerUpsInMap >= _maxPowerUpsInMap) return;
+    
+    final random = Random();
+    final position = Vector2(
+      random.nextDouble() * worldSize.x,
+      random.nextDouble() * worldSize.y,
+    );
+    
+    final type = PowerUpConfig.getRandomPowerUp();
+    final powerUp = PowerUp(
+      id: '${DateTime.now().millisecondsSinceEpoch}_$powerUpsInMap',
+      type: type,
+      position: position,
+    );
+    
+    world.add(powerUp);
+    print('🎁 Power-up generado: ${PowerUpConfig.getConfig(type).name}');
+  }
+  
+  void collectPowerUp(PowerUp powerUp) {
+    // Verificar cooldown
+    if (_powerUpCooldown > 0) return;
+    
+    // Desactivar power-up anterior si existe
+    if (activePowerUp != null) {
+      _deactivatePowerUp();
+    }
+    
+    // Activar nuevo power-up
+    activePowerUp = powerUp.type;
+    final config = PowerUpConfig.getConfig(powerUp.type);
+    powerUpTotalDuration = config.duration;
+    powerUpRemainingTime = config.duration;
+    
+    // Eliminar el power-up del mapa
+    powerUp.removeFromParent();
+    
+    // Aplicar efecto según tipo
+    _activatePowerUpEffect(powerUp.type);
+    
+    // Iniciar cooldown
+    _powerUpCooldown = _powerUpCooldownDuration;
+    
+    print('🎁 Power-up recogido: ${config.name}');
+  }
+  
+  void _activatePowerUpEffect(PowerUpType type) {
+    switch (type) {
+      case PowerUpType.speedBoost:
+        speedMultiplier = 2.0;
+        break;
+        
+      case PowerUpType.shield:
+        isShieldActive = true;
+        break;
+        
+      case PowerUpType.magnet:
+        isMagnetActive = true;
+        break;
+        
+      case PowerUpType.ghostMode:
+        isGhostMode = true;
+        break;
+        
+      case PowerUpType.doublePoints:
+        pointsMultiplier = 2.0;
+        break;
+        
+      case PowerUpType.dash:
+        _applyDash();
+        break;
+        
+      case PowerUpType.freeze:
+        _applyFreeze();
+        break;
+        
+      case PowerUpType.shrinkRay:
+        _applyShrinkRay();
+        break;
+        
+      case PowerUpType.bomb:
+        _applyBomb();
+        break;
+    }
+  }
+  
+  void _deactivatePowerUp() {
+    if (activePowerUp == null) return;
+    
+    // Resetear efectos
+    speedMultiplier = 1.0;
+    pointsMultiplier = 1.0;
+    isShieldActive = false;
+    isGhostMode = false;
+    isMagnetActive = false;
+    
+    print('🎁 Power-up desactivado: ${PowerUpConfig.getConfig(activePowerUp!).name}');
+    
+    activePowerUp = null;
+    powerUpRemainingTime = 0;
+    powerUpTotalDuration = 0;
+  }
+  
+  // 🧲 Efecto del imán
+  void _applyMagnetEffect() {
+    final magnetRange = 300.0;
+    final magnetForce = 500.0;
+    
+    final allFood = world.children.whereType<Food>().toList();
+    for (var food in allFood) {
+      final distance = (food.position - playerHead.position).length;
+      if (distance < magnetRange && distance > 30) {
+        final direction = (playerHead.position - food.position).normalized();
+        food.position += direction * magnetForce * 0.016; // Aproximadamente 60 FPS
+      }
+    }
+  }
+  
+  // 🎯 Dash - Impulso rápido
+  void _applyDash() {
+    final dashDistance = 400.0;
+    final newPosition = playerHead.position + (targetDirection * dashDistance);
+    
+    // Verificar límites del mapa
+    newPosition.clamp(
+      Vector2(currentRadius, currentRadius),
+      worldSize - Vector2(currentRadius, currentRadius),
+    );
+    
+    playerHead.position = newPosition;
+    
+    // TODO: Dejar estela peligrosa temporal
+    print('🎯 ¡Dash activado!');
+  }
+  
+  // ❄️ Freeze - Congela jugadores cercanos
+  void _applyFreeze() {
+    final freezeRange = 400.0;
+    
+    for (var player in remotePlayers.values) {
+      final distance = (player.position - playerHead.position).length;
+      if (distance < freezeRange) {
+        // TODO: Enviar al servidor para congelar al jugador
+        print('❄️ Jugador ${player.playerId} congelado!');
+      }
+    }
+  }
+  
+  // 📏 Shrink Ray - Reduce tamaño de rivales
+  void _applyShrinkRay() {
+    final shrinkRange = 300.0;
+    final shrinkPercentage = 0.3; // 30%
+    
+    for (var player in remotePlayers.values) {
+      final distance = (player.position - playerHead.position).length;
+      if (distance < shrinkRange) {
+        final segmentsToRemove = (player.bodyLength * shrinkPercentage).round();
+        // TODO: Enviar al servidor para reducir tamaño
+        print('📏 Jugador ${player.playerId} reducido en $segmentsToRemove segmentos!');
+      }
+    }
+  }
+  
+  // 💣 Bomb - Explota segmentos cercanos
+  void _applyBomb() {
+    final bombRange = 250.0;
+    
+    // Eliminar segmentos de cuerpos cercanos
+    final allSegments = world.children.whereType<BodySegment>().toList();
+    int destroyedSegments = 0;
+    
+    for (var segment in allSegments) {
+      final distance = (segment.position - playerHead.position).length;
+      if (distance < bombRange && segment.ownerId != networkService?.playerId) {
+        segment.removeFromParent();
+        destroyedSegments++;
+      }
+    }
+    
+    // TODO: Efecto visual de explosión
+    print('💣 ¡BOOM! $destroyedSegments segmentos destruidos!');
+  }
+  
+  // 🎁 ==================== FIN SISTEMA DE POWER-UPS ====================
   
   @override
   void onRemove() {

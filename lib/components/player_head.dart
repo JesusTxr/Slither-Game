@@ -3,10 +3,11 @@ import 'dart:math' as math;
 
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
-import 'package:slither_game/components/food.dart';
 import 'package:slither_game/components/body_segment.dart';
-import 'package:slither_game/game.dart';
+import 'package:slither_game/components/food.dart';
+import 'package:slither_game/components/power_up.dart';
 import 'package:slither_game/config/snake_skins.dart';
+import 'package:slither_game/game.dart';
 
 class PlayerHead extends PositionComponent
     with HasGameReference<SlitherGame>, CollisionCallbacks {
@@ -201,7 +202,8 @@ class PlayerHead extends PositionComponent
     super.update(dt);
     size = Vector2.all(game.currentRadius * 2);
     // Usar directamente la dirección del juego (ya está normalizada)
-    position += game.targetDirection * _speed * dt;
+    // ⚡ Aplicar multiplicador de velocidad si está activo Speed Boost
+    position += game.targetDirection * _speed * game.speedMultiplier * dt;
 
     // Lógica de límites del mapa (clamping)
     double currentRadius = (game as SlitherGame).currentRadius;
@@ -235,13 +237,23 @@ class PlayerHead extends PositionComponent
       game.eatFood(foodId: other.id); // Pasar el ID de la comida
     }
     
+    // 🎁 Colisión con power-up
+    if (other is PowerUp) {
+      game.collectPowerUp(other);
+    }
+    
     // Colisión con segmento de cuerpo de otro jugador
     if (other is BodySegment) {
       // Verificar que no sea mi propio cuerpo
       final myPlayerId = game.networkService?.playerId;
       if (other.ownerId != null && other.ownerId != myPlayerId) {
-        print('💥 ¡Colisión! Chocaste con el jugador: ${other.ownerId}');
-        game.onPlayerDeath();
+        // 🛡️ Verificar si está activo shield o ghost mode
+        if (!game.isShieldActive && !game.isGhostMode) {
+          print('💥 ¡Colisión! Chocaste con el jugador: ${other.ownerId}');
+          game.onPlayerDeath();
+        } else {
+          print('✨ ¡Colisión evitada! Power-up activo');
+        }
       }
     }
   }

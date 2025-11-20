@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flame/game.dart';
 import '../game.dart';
 import '../config/game_config.dart';
+import '../widgets/power_up_indicator.dart';
 
 class GameScreen extends StatelessWidget {
   const GameScreen({Key? key}) : super(key: key);
@@ -58,6 +59,21 @@ class GameScreen extends StatelessWidget {
               left: 10,
               child: _RankingDisplay(game: game),
             ),
+          // 🎁 Indicador de power-up activo
+          Positioned(
+            bottom: 120,
+            left: 20,
+            child: StreamBuilder<double>(
+              stream: Stream.periodic(const Duration(milliseconds: 100), (_) => game.powerUpRemainingTime),
+              builder: (context, snapshot) {
+                return PowerUpIndicator(
+                  activePowerUp: game.activePowerUp,
+                  remainingTime: game.powerUpRemainingTime,
+                  totalDuration: game.powerUpTotalDuration,
+                );
+              },
+            ),
+          ),
         ],
       ),
     );

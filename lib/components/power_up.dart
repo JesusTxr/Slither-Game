@@ -2,7 +2,7 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:flame/components.dart';
-import 'package:flutter/painting.dart';
+import 'package:flutter/painting.dart' hide Gradient;
 import 'package:slither_game/config/power_up_types.dart';
 import 'package:slither_game/game.dart';
 

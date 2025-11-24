@@ -1,12 +1,13 @@
 import 'dart:math';
 import 'dart:ui';
 
+import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/painting.dart' hide Gradient;
 import 'package:slither_game/config/power_up_types.dart';
 import 'package:slither_game/game.dart';
 
-class PowerUp extends PositionComponent with HasGameReference<SlitherGame> {
+class PowerUp extends PositionComponent with HasGameReference<SlitherGame>, CollisionCallbacks {
   final String id;
   final PowerUpType type;
   late final PowerUpConfig config;
@@ -28,6 +29,12 @@ class PowerUp extends PositionComponent with HasGameReference<SlitherGame> {
   @override
   Future<void> onLoad() async {
     config = PowerUpConfig.getConfig(type);
+    
+    // 🎯 Agregar hitbox circular para detectar colisiones
+    add(CircleHitbox(
+      radius: 20, // Radio de colisión (la mitad del tamaño)
+      anchor: Anchor.center,
+    ));
   }
   
   @override

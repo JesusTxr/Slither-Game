@@ -29,57 +29,56 @@ class BodySegment extends PositionComponent
 
   @override
   void render(Canvas canvas) {
+    // ⚡ OPTIMIZACIÓN: Culling - no renderizar si está fuera de cámara
+    final camera = game.cameraComponent;
+    final visibleRect = camera.visibleWorldRect;
+    
+    // Crear un rectángulo pequeño alrededor del segmento
+    final segmentRect = Rect.fromCenter(
+      center: position.toOffset(),
+      width: size.x,
+      height: size.y,
+    );
+    
+    // Si el segmento está completamente fuera de la vista, no renderizarlo
+    if (!visibleRect.overlaps(segmentRect)) {
+      return;
+    }
+    
     super.render(canvas);
     final center = (size / 2).toOffset();
     final radius = size.x / 2;
     
-    // 1. Sombra suave para profundidad
-    final shadowPaint = Paint()
-      ..color = const Color(0xFF000000).withOpacity(0.15)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
-    canvas.drawCircle(center + const Offset(2, 2), radius, shadowPaint);
+    // ⚡ OPTIMIZADO: Renderizado simplificado (menos operaciones)
     
-    // 2. Cuerpo base ligeramente más grande para cubrir espacios
+    // 1. Sombra (solo 1 drawCircle)
+    final shadowPaint = Paint()
+      ..color = const Color(0xFF000000).withOpacity(0.12);
+    canvas.drawCircle(center + const Offset(1.5, 1.5), radius, shadowPaint);
+    
+    // 2. Cuerpo base
     final basePaint = Paint()
       ..color = skin.primaryColor
       ..style = PaintingStyle.fill;
     canvas.drawCircle(center, radius * 1.08, basePaint);
     
-    // 3. Gradiente radial mejorado para efecto 3D
+    // 3. Gradiente simplificado (2 colores)
     final gradientPaint = Paint()
       ..shader = Gradient.radial(
-        center - Offset(radius * 0.3, radius * 0.3), // Luz desde arriba-izquierda
+        center - Offset(radius * 0.3, radius * 0.3),
         radius * 1.2,
         [
-          Color.lerp(skin.secondaryColor, const Color(0xFFFFFFFF), 0.4)!,
           skin.secondaryColor,
           skin.primaryColor,
-          Color.lerp(skin.primaryColor, const Color(0xFF000000), 0.2)!,
         ],
-        [0.0, 0.3, 0.7, 1.0],
+        [0.0, 1.0],
       );
     canvas.drawCircle(center, radius, gradientPaint);
     
-    // 4. Brillo especular (reflejo de luz)
+    // 4. Brillo simple (1 círculo transparente)
     final shinePaint = Paint()
-      ..shader = Gradient.radial(
-        center - Offset(radius * 0.35, radius * 0.35),
-        radius * 0.5,
-        [
-          const Color(0xFFFFFFFF).withOpacity(0.4),
-          const Color(0xFFFFFFFF).withOpacity(0.15),
-          const Color(0xFFFFFFFF).withOpacity(0.0),
-        ],
-        [0.0, 0.5, 1.0],
-      );
-    canvas.drawCircle(center, radius, shinePaint);
-    
-    // 5. Borde oscuro para definición
-    final borderPaint = Paint()
-      ..color = Color.lerp(skin.primaryColor, const Color(0xFF000000), 0.5)!.withOpacity(0.6)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0;
-    canvas.drawCircle(center, radius - 1, borderPaint);
+      ..color = const Color(0xFFFFFFFF).withOpacity(0.2);
+    canvas.drawCircle(center - Offset(radius * 0.3, radius * 0.3), radius * 0.35, shinePaint);
   }
 
   @override

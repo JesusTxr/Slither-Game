@@ -20,8 +20,8 @@ class _SkinShopScreenState extends State<SkinShopScreen> {
     {'id': 'toxic', 'skin': SnakeSkins.toxic, 'name': 'Tóxico', 'emoji': '☢️'},
     {'id': 'golden', 'skin': SnakeSkins.golden, 'name': 'Dorado', 'emoji': '👑'},
     {'id': 'shadow', 'skin': SnakeSkins.shadow, 'name': 'Sombra', 'emoji': '🌑'},
-    {'id': 'rainbow', 'skin': SnakeSkins.rainbow, 'name': 'Arcoíris', 'emoji': '🌈'},
     {'id': 'candy', 'skin': SnakeSkins.candy, 'name': 'Dulce', 'emoji': '🍭'},
+    {'id': 'royal', 'skin': SnakeSkins.royal, 'name': 'Real', 'emoji': '💜'},
   ];
 
   @override

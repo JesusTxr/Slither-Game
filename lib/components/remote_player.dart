@@ -31,6 +31,18 @@ class RemotePlayer extends PositionComponent
   double _timeSinceLastUpdate = 0;
   final double _maxExtrapolationTime = 1.2; // Extrapolación muy larga
   
+  // ⚡ OPTIMIZACIÓN: Cache del TextPainter para evitar reconstrucción cada frame
+  late final TextPainter _cachedTextPainter;
+  
+  // ⚡ OPTIMIZACIÓN: Cache de Paints para evitar recrearlos
+  late final Paint _shadowPaint;
+  late final Paint _basePaint;
+  late final Paint _borderPaint;
+  
+  // ⚡ OPTIMIZACIÓN: Reducir frecuencia de actualización de body segments
+  double _bodyUpdateTimer = 0;
+  static const double _bodyUpdateInterval = 0.033; // 30 FPS para body (suficiente)
+  
   RemotePlayer({
     required this.playerId,
     required this.nickname,
@@ -49,71 +61,9 @@ class RemotePlayer extends PositionComponent
   Future<void> onLoad() async {
     await super.onLoad();
     size = Vector2.all(currentRadius * 2);
-  }
-
-  @override
-  void render(Canvas canvas) {
-    super.render(canvas);
     
-    final center = (size / 2).toOffset();
-    final radius = size.x / 2;
-    
-    // Calcular ángulo de dirección
-    final angle = _calculateDirection();
-    
-    // 1. Sombra suave para profundidad
-    final shadowPaint = Paint()
-      ..color = const Color(0xFF000000).withOpacity(0.2)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
-    canvas.drawCircle(center + const Offset(3, 3), radius, shadowPaint);
-    
-    // 2. Cuerpo base ligeramente más grande para conexión con el cuerpo
-    final basePaint = Paint()
-      ..color = skin.primaryColor
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(center, radius * 1.12, basePaint);
-    
-    // 3. Gradiente radial mejorado para efecto 3D
-    final gradientPaint = Paint()
-      ..shader = Gradient.radial(
-        center - Offset(radius * 0.3, radius * 0.3), // Luz desde arriba-izquierda
-        radius * 1.3,
-        [
-          Color.lerp(skin.secondaryColor, const Color(0xFFFFFFFF), 0.5)!,
-          skin.secondaryColor,
-          skin.primaryColor,
-          Color.lerp(skin.primaryColor, const Color(0xFF000000), 0.25)!,
-        ],
-        [0.0, 0.25, 0.65, 1.0],
-      );
-    canvas.drawCircle(center, radius, gradientPaint);
-    
-    // 4. Brillo especular (reflejo de luz) - más pronunciado en la cabeza
-    final shinePaint = Paint()
-      ..shader = Gradient.radial(
-        center - Offset(radius * 0.4, radius * 0.4),
-        radius * 0.6,
-        [
-          const Color(0xFFFFFFFF).withOpacity(0.5),
-          const Color(0xFFFFFFFF).withOpacity(0.2),
-          const Color(0xFFFFFFFF).withOpacity(0.0),
-        ],
-        [0.0, 0.4, 1.0],
-      );
-    canvas.drawCircle(center, radius, shinePaint);
-    
-    // 5. Borde oscuro para definición
-    final borderPaint = Paint()
-      ..color = Color.lerp(skin.primaryColor, const Color(0xFF000000), 0.5)!.withOpacity(0.7)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5;
-    canvas.drawCircle(center, radius - 1, borderPaint);
-    
-    // 6. Dibujar ojos
-    _drawEyes(canvas, center, radius, angle);
-    
-    // 7. Dibujar el nickname encima
-    final textPainter = TextPainter(
+    // ⚡ OPTIMIZACIÓN: Cachear TextPainter (solo se crea una vez)
+    _cachedTextPainter = TextPainter(
       text: TextSpan(
         text: nickname,
         style: const TextStyle(
@@ -131,12 +81,69 @@ class RemotePlayer extends PositionComponent
       ),
       textDirection: TextDirection.ltr,
     );
-    textPainter.layout();
-    textPainter.paint(
+    _cachedTextPainter.layout();
+    
+    // ⚡ OPTIMIZACIÓN: Cachear Paints comunes
+    _shadowPaint = Paint()
+      ..color = const Color(0xFF000000).withOpacity(0.2)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
+    
+    _basePaint = Paint()
+      ..color = skin.primaryColor
+      ..style = PaintingStyle.fill;
+    
+    _borderPaint = Paint()
+      ..color = Color.lerp(skin.primaryColor, const Color(0xFF000000), 0.5)!.withOpacity(0.7)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5;
+  }
+
+  @override
+  void render(Canvas canvas) {
+    super.render(canvas);
+    
+    final center = (size / 2).toOffset();
+    final radius = size.x / 2;
+    
+    // Calcular ángulo de dirección
+    final angle = _calculateDirection();
+    
+    // 1. Sombra suave (usando paint cacheado)
+    canvas.drawCircle(center + const Offset(3, 3), radius, _shadowPaint);
+    
+    // 2. Cuerpo base (usando paint cacheado)
+    canvas.drawCircle(center, radius * 1.12, _basePaint);
+    
+    // 3. ⚡ OPTIMIZADO: Gradiente simplificado (2 colores en lugar de 4)
+    final gradientPaint = Paint()
+      ..shader = Gradient.radial(
+        center - Offset(radius * 0.3, radius * 0.3),
+        radius * 1.2,
+        [
+          skin.secondaryColor,
+          skin.primaryColor,
+        ],
+        [0.0, 1.0],
+      );
+    canvas.drawCircle(center, radius, gradientPaint);
+    
+    // 4. ⚡ OPTIMIZADO: Brillo simplificado (1 círculo semi-transparente)
+    final shinePaint = Paint()
+      ..color = const Color(0xFFFFFFFF).withOpacity(0.25);
+    canvas.drawCircle(center - Offset(radius * 0.3, radius * 0.3), radius * 0.4, shinePaint);
+    
+    // 5. Borde (usando paint cacheado)
+    canvas.drawCircle(center, radius - 1, _borderPaint);
+    
+    // 6. ⚡ OPTIMIZADO: Ojos simplificados
+    _drawSimpleEyes(canvas, center, radius, angle);
+    
+    // 7. ⚡ OPTIMIZADO: Nickname con TextPainter cacheado
+    _cachedTextPainter.paint(
       canvas,
       Offset(
-        (size.x - textPainter.width) / 2,
-        -textPainter.height - 10,
+        (size.x - _cachedTextPainter.width) / 2,
+        -_cachedTextPainter.height - 10,
       ),
     );
   }
@@ -153,109 +160,34 @@ class RemotePlayer extends PositionComponent
     return 0.0; // Dirección por defecto (derecha)
   }
   
-  void _drawEyes(Canvas canvas, Offset center, double radius, double angle) {
-    // Tamaño de los ojos basado en el radio (más grandes para mejor visibilidad)
-    final eyeSize = radius * 0.35;
-    final eyeDistance = radius * 0.45;
+  // ⚡ OPTIMIZADO: Ojos simplificados (4 círculos en lugar de 10+)
+  void _drawSimpleEyes(Canvas canvas, Offset center, double radius, double angle) {
+    final eyeSize = radius * 0.3;
+    final eyeDistance = radius * 0.4;
     
-    // Posición de los ojos (relativa a la dirección)
+    // Posición de los ojos
     final eyeOffset = Offset(
       math.cos(angle) * eyeDistance,
       math.sin(angle) * eyeDistance,
     );
-    
-    // Perpendicular para separar los ojos
     final perpendicular = Offset(
-      -math.sin(angle) * (radius * 0.35),
-      math.cos(angle) * (radius * 0.35),
+      -math.sin(angle) * (radius * 0.3),
+      math.cos(angle) * (radius * 0.3),
     );
+    
+    // Paints simples y reutilizables
+    final whitePaint = Paint()..color = skin.eyeColor;
+    final pupilPaint = Paint()..color = skin.pupilColor;
     
     // Ojo izquierdo
     final leftEyePos = center + eyeOffset + perpendicular;
-    _drawEye(canvas, leftEyePos, eyeSize, angle);
+    canvas.drawCircle(leftEyePos, eyeSize, whitePaint);
+    canvas.drawCircle(leftEyePos + Offset(math.cos(angle) * eyeSize * 0.25, math.sin(angle) * eyeSize * 0.25), eyeSize * 0.4, pupilPaint);
     
     // Ojo derecho
     final rightEyePos = center + eyeOffset - perpendicular;
-    _drawEye(canvas, rightEyePos, eyeSize, angle);
-  }
-  
-  void _drawEye(Canvas canvas, Offset position, double size, double angle) {
-    // Sombra del ojo
-    final eyeShadowPaint = Paint()
-      ..color = const Color(0xFF000000).withOpacity(0.3)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
-    canvas.drawCircle(position + const Offset(1.5, 1.5), size * 1.1, eyeShadowPaint);
-    
-    // Contorno blanco para que el ojo resalte
-    final whiteOutlinePaint = Paint()
-      ..color = const Color(0xFFFFFFFF)
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(position, size * 1.15, whiteOutlinePaint);
-    
-    // Blanco del ojo con gradiente sutil
-    final whitePaint = Paint()
-      ..shader = Gradient.radial(
-        position - Offset(size * 0.2, size * 0.2),
-        size,
-        [
-          skin.eyeColor,
-          Color.lerp(skin.eyeColor, const Color(0xFF000000), 0.1)!,
-        ],
-        [0.0, 1.0],
-      );
-    canvas.drawCircle(position, size, whitePaint);
-    
-    // Borde del ojo más pronunciado
-    final eyeBorderPaint = Paint()
-      ..color = Color.lerp(skin.eyeColor, const Color(0xFF000000), 0.4)!
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-    canvas.drawCircle(position, size, eyeBorderPaint);
-    
-    // Pupila (ligeramente hacia adelante)
-    final pupilOffset = Offset(
-      math.cos(angle) * (size * 0.3),
-      math.sin(angle) * (size * 0.3),
-    );
-    final pupilPaint = Paint()
-      ..shader = Gradient.radial(
-        position + pupilOffset,
-        size * 0.4,
-        [
-          skin.pupilColor,
-          Color.lerp(skin.pupilColor, const Color(0xFF000000), 0.3)!,
-        ],
-        [0.7, 1.0],
-      );
-    canvas.drawCircle(position + pupilOffset, size * 0.4, pupilPaint);
-    
-    // Brillo principal en el ojo
-    final shinePaint = Paint()
-      ..shader = Gradient.radial(
-        position + Offset(-size * 0.15, -size * 0.15),
-        size * 0.35,
-        [
-          const Color(0xFFFFFFFF).withOpacity(0.8),
-          const Color(0xFFFFFFFF).withOpacity(0.3),
-          const Color(0xFFFFFFFF).withOpacity(0.0),
-        ],
-        [0.0, 0.6, 1.0],
-      );
-    canvas.drawCircle(
-      position + Offset(-size * 0.15, -size * 0.15),
-      size * 0.35,
-      shinePaint,
-    );
-    
-    // Brillo secundario (pequeño)
-    final shineSecondaryPaint = Paint()
-      ..color = const Color(0xFFFFFFFF).withOpacity(0.4)
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(
-      position + Offset(size * 0.25, size * 0.3),
-      size * 0.15,
-      shineSecondaryPaint,
-    );
+    canvas.drawCircle(rightEyePos, eyeSize, whitePaint);
+    canvas.drawCircle(rightEyePos + Offset(math.cos(angle) * eyeSize * 0.25, math.sin(angle) * eyeSize * 0.25), eyeSize * 0.4, pupilPaint);
   }
 
   void updatePosition(Vector2 newPosition) {
@@ -320,32 +252,37 @@ class RemotePlayer extends PositionComponent
       }
     }
     
-    // Hacer crecer el cuerpo según bodyLength
-    if (body.length < bodyLength) {
-      final segment = BodySegment(
-        position: position,
-        ownerId: playerId,  // Marcar el segmento con el ID del jugador
-        skin: skin,  // 🎨 Usar el mismo skin que la cabeza
-      );
-      game.world.add(segment);
-      body.add(segment);
-    }
-    
-    // Actualizar posiciones de los segmentos del cuerpo (más juntos)
-    if (pathPoints.isNotEmpty) {
-      for (var i = 0; i < body.length; i++) {
-        final pointIndex = pathPoints.length - 1 - (i * 1); // Cambiado de 3 a 1 para más densidad
-        if (pointIndex >= 0) {
-          body[i].position = pathPoints[pointIndex];
+    // ⚡ OPTIMIZACIÓN: Actualizar body segments solo cada 0.033s (30 FPS)
+    _bodyUpdateTimer += dt;
+    if (_bodyUpdateTimer >= _bodyUpdateInterval) {
+      _bodyUpdateTimer = 0;
+      
+      // Hacer crecer el cuerpo según bodyLength
+      if (body.length < bodyLength) {
+        final segment = BodySegment(
+          position: position,
+          ownerId: playerId,
+          skin: skin,
+        );
+        game.world.add(segment);
+        body.add(segment);
+      }
+      
+      // Actualizar posiciones de los segmentos del cuerpo
+      if (pathPoints.isNotEmpty) {
+        for (var i = 0; i < body.length; i++) {
+          final pointIndex = pathPoints.length - 1 - (i * 1);
+          if (pointIndex >= 0) {
+            body[i].position = pathPoints[pointIndex];
+          }
         }
       }
-    }
-    
-    // Limpiar puntos antiguos del camino
-    final lastSegmentIndex =
-        pathPoints.length - 1 - ((body.length - 1) * 1);
-    if (lastSegmentIndex > 10) {
-      pathPoints.removeRange(0, lastSegmentIndex - 10);
+      
+      // Limpiar puntos antiguos del camino
+      final lastSegmentIndex = pathPoints.length - 1 - ((body.length - 1) * 1);
+      if (lastSegmentIndex > 10) {
+        pathPoints.removeRange(0, lastSegmentIndex - 10);
+      }
     }
   }
   

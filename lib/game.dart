@@ -696,35 +696,44 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
   }
 
   @override
+  // ⚡ OPTIMIZACIÓN: Timer para actualizar body segments
+  double _bodyUpdateTimer = 0;
+  static const double _bodyUpdateInterval = 0.033; // 30 FPS para body
+  
   void update(double dt) {
     super.update(dt);
     
-    // Hacer crecer el cuerpo según bodyLength
-    if (body.length < bodyLength) {
-      final segment = BodySegment(
-        position: playerHead.position,
-        ownerId: networkService?.playerId,  // Marcar mis propios segmentos
-        skin: currentSkin,  // 🎨 Usar el skin actual
-      );
-      world.add(segment);
-      body.add(segment);
-    }
+    // ⚡ OPTIMIZACIÓN: Actualizar body segments solo cada 0.033s (30 FPS)
+    _bodyUpdateTimer += dt;
+    if (_bodyUpdateTimer >= _bodyUpdateInterval) {
+      _bodyUpdateTimer = 0;
+      
+      // Hacer crecer el cuerpo según bodyLength
+      if (body.length < bodyLength) {
+        final segment = BodySegment(
+          position: playerHead.position,
+          ownerId: networkService?.playerId,
+          skin: currentSkin,
+        );
+        world.add(segment);
+        body.add(segment);
+      }
 
-    // Actualizar posiciones de los segmentos del cuerpo (más juntos)
-    if (playerHead.pathPoints.isNotEmpty) {
-      for (var i = 0; i < body.length; i++) {
-        final pointIndex = playerHead.pathPoints.length - 1 - (i * 1); // Cambiado de 3 a 1 para más densidad
-        if (pointIndex >= 0) {
-          body[i].position = playerHead.pathPoints[pointIndex];
+      // Actualizar posiciones de los segmentos del cuerpo
+      if (playerHead.pathPoints.isNotEmpty) {
+        for (var i = 0; i < body.length; i++) {
+          final pointIndex = playerHead.pathPoints.length - 1 - (i * 1);
+          if (pointIndex >= 0) {
+            body[i].position = playerHead.pathPoints[pointIndex];
+          }
         }
       }
-    }
 
-    // Limpiar puntos antiguos del camino
-    final lastSegmentIndex =
-        playerHead.pathPoints.length - 1 - ((body.length - 1) * 1);
-    if (lastSegmentIndex > 10) {
-      playerHead.pathPoints.removeRange(0, lastSegmentIndex - 10);
+      // Limpiar puntos antiguos del camino
+      final lastSegmentIndex = playerHead.pathPoints.length - 1 - ((body.length - 1) * 1);
+      if (lastSegmentIndex > 10) {
+        playerHead.pathPoints.removeRange(0, lastSegmentIndex - 10);
+      }
     }
 
     // Enviar actualización de posición al servidor (solo en multijugador)

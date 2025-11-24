@@ -4,8 +4,9 @@ import 'dart:ui';
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:uuid/uuid.dart';
+import 'package:slither_game/game.dart';
 
-class Food extends PositionComponent {
+class Food extends PositionComponent with HasGameReference<SlitherGame> {
   final String id;
   final Color? color;
   
@@ -43,6 +44,21 @@ class Food extends PositionComponent {
 
   @override
   void render(Canvas canvas) {
+    // ⚡ OPTIMIZACIÓN: Culling - no renderizar comida fuera de cámara
+    final camera = game.cameraComponent;
+    final visibleRect = camera.visibleWorldRect;
+    
+    final foodRect = Rect.fromCenter(
+      center: position.toOffset(),
+      width: size.x,
+      height: size.y,
+    );
+    
+    // Si está fuera de la vista, no renderizar
+    if (!visibleRect.overlaps(foodRect)) {
+      return;
+    }
+    
     super.render(canvas);
     canvas.drawCircle((size / 2).toOffset(), size.x / 2, _paint);
   }

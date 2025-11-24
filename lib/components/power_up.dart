@@ -15,6 +15,9 @@ class PowerUp extends PositionComponent with HasGameReference<SlitherGame>, Coll
   double _pulseScale = 1.0;
   double _pulseDirection = 1.0;
   
+  // ⚡ OPTIMIZACIÓN: Cache del TextPainter
+  late final TextPainter _cachedEmojiPainter;
+  
   PowerUp({
     required this.id,
     required this.type,
@@ -30,146 +33,8 @@ class PowerUp extends PositionComponent with HasGameReference<SlitherGame>, Coll
   Future<void> onLoad() async {
     config = PowerUpConfig.getConfig(type);
     
-    // 🎯 Agregar hitbox circular para detectar colisiones
-    add(CircleHitbox(
-      radius: 20, // Radio de colisión (la mitad del tamaño)
-      anchor: Anchor.center,
-    ));
-  }
-  
-  @override
-  void update(double dt) {
-    super.update(dt);
-    
-    // Rotación constante
-    _rotation += dt * 2;
-    
-    // Efecto de pulsación
-    _pulseScale += _pulseDirection * dt * 0.5;
-    if (_pulseScale > 1.15) {
-      _pulseScale = 1.15;
-      _pulseDirection = -1;
-    } else if (_pulseScale < 0.95) {
-      _pulseScale = 0.95;
-      _pulseDirection = 1;
-    }
-  }
-  
-  @override
-  void render(Canvas canvas) {
-    super.render(canvas);
-    
-    final center = (size / 2).toOffset();
-    final radius = size.x / 2;
-    
-    canvas.save();
-    canvas.translate(center.dx, center.dy);
-    canvas.scale(_pulseScale);
-    canvas.rotate(_rotation);
-    canvas.translate(-center.dx, -center.dy);
-    
-    // 1. Aura exterior (glow)
-    final auraPaint = Paint()
-      ..shader = Gradient.radial(
-        center,
-        radius * 1.5,
-        [
-          config.color.withOpacity(0.4),
-          config.color.withOpacity(0.2),
-          config.color.withOpacity(0.0),
-        ],
-        [0.0, 0.7, 1.0],
-      );
-    canvas.drawCircle(center, radius * 1.5, auraPaint);
-    
-    // 2. Borde exterior brillante
-    final outerBorderPaint = Paint()
-      ..color = config.color.withOpacity(0.8)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3;
-    canvas.drawCircle(center, radius * 0.9, outerBorderPaint);
-    
-    // 3. Caja principal con gradiente
-    final boxPaint = Paint()
-      ..shader = Gradient.radial(
-        center - Offset(radius * 0.3, radius * 0.3),
-        radius,
-        [
-          Color.lerp(config.color, const Color(0xFFFFFFFF), 0.3)!,
-          config.color,
-          Color.lerp(config.color, const Color(0xFF000000), 0.3)!,
-        ],
-        [0.0, 0.5, 1.0],
-      );
-    canvas.drawCircle(center, radius * 0.8, boxPaint);
-    
-    // 4. Brillo especular
-    final shinePaint = Paint()
-      ..shader = Gradient.radial(
-        center - Offset(radius * 0.4, radius * 0.4),
-        radius * 0.5,
-        [
-          const Color(0xFFFFFFFF).withOpacity(0.6),
-          const Color(0xFFFFFFFF).withOpacity(0.2),
-          const Color(0xFFFFFFFF).withOpacity(0.0),
-        ],
-        [0.0, 0.6, 1.0],
-      );
-    canvas.drawCircle(center, radius * 0.8, shinePaint);
-    
-    // 5. Borde interior
-    final innerBorderPaint = Paint()
-      ..color = Color.lerp(config.color, const Color(0xFF000000), 0.4)!
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
-    canvas.drawCircle(center, radius * 0.75, innerBorderPaint);
-    
-    // 6. Indicador de rareza (estrellas para épicos)
-    if (config.rarity == PowerUpRarity.epic) {
-      _drawStars(canvas, center, radius);
-    }
-    
-    canvas.restore();
-    
-    // 7. Emoji/ícono en el centro
-    _drawEmoji(canvas, center);
-  }
-  
-  void _drawStars(Canvas canvas, Offset center, double radius) {
-    final starPaint = Paint()
-      ..color = const Color(0xFFFFD700)
-      ..style = PaintingStyle.fill;
-    
-    // 3 pequeñas estrellas giratorias
-    for (int i = 0; i < 3; i++) {
-      final angle = (_rotation * 2) + (i * (pi * 2 / 3));
-      final starPos = center + Offset(
-        cos(angle) * radius * 1.2,
-        sin(angle) * radius * 1.2,
-      );
-      
-      _drawStar(canvas, starPos, 3, starPaint);
-    }
-  }
-  
-  void _drawStar(Canvas canvas, Offset center, double size, Paint paint) {
-    final path = Path();
-    for (int i = 0; i < 5; i++) {
-      final angle = (i * 2 * pi / 5) - (pi / 2);
-      final x = center.dx + cos(angle) * size;
-      final y = center.dy + sin(angle) * size;
-      if (i == 0) {
-        path.moveTo(x, y);
-      } else {
-        path.lineTo(x, y);
-      }
-    }
-    path.close();
-    canvas.drawPath(path, paint);
-  }
-  
-  void _drawEmoji(Canvas canvas, Offset center) {
-    final textPainter = TextPainter(
+    // ⚡ OPTIMIZACIÓN: Cachear TextPainter del emoji
+    _cachedEmojiPainter = TextPainter(
       text: TextSpan(
         text: config.emoji,
         style: TextStyle(
@@ -185,10 +50,137 @@ class PowerUp extends PositionComponent with HasGameReference<SlitherGame>, Coll
       ),
       textDirection: TextDirection.ltr,
     );
-    textPainter.layout();
-    textPainter.paint(
+    _cachedEmojiPainter.layout();
+    
+    // 🎯 Agregar hitbox circular para detectar colisiones
+    add(CircleHitbox(
+      radius: 20,
+      anchor: Anchor.center,
+    ));
+  }
+  
+  // ⚡ OPTIMIZACIÓN: Reducir frecuencia de animaciones
+  double _animationTimer = 0;
+  static const double _animationInterval = 0.05; // 20 FPS para animaciones
+  
+  @override
+  void update(double dt) {
+    super.update(dt);
+    
+    // ⚡ OPTIMIZACIÓN: Actualizar animación solo cada 0.05s
+    _animationTimer += dt;
+    if (_animationTimer >= _animationInterval) {
+      _animationTimer = 0;
+      
+      // Rotación constante
+      _rotation += _animationInterval * 2;
+      
+      // Efecto de pulsación
+      _pulseScale += _pulseDirection * _animationInterval * 0.5;
+      if (_pulseScale > 1.15) {
+        _pulseScale = 1.15;
+        _pulseDirection = -1;
+      } else if (_pulseScale < 0.95) {
+        _pulseScale = 0.95;
+        _pulseDirection = 1;
+      }
+    }
+  }
+  
+  @override
+  void render(Canvas canvas) {
+    // ⚡ OPTIMIZACIÓN: Culling - no renderizar power-ups fuera de cámara
+    final camera = game.cameraComponent;
+    final visibleRect = camera.visibleWorldRect;
+    
+    final powerUpRect = Rect.fromCenter(
+      center: position.toOffset(),
+      width: size.x * 1.5, // Un poco más grande para incluir el aura
+      height: size.y * 1.5,
+    );
+    
+    // Si está fuera de la vista, no renderizar
+    if (!visibleRect.overlaps(powerUpRect)) {
+      return;
+    }
+    
+    super.render(canvas);
+    
+    final center = (size / 2).toOffset();
+    final radius = size.x / 2;
+    
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.scale(_pulseScale);
+    canvas.rotate(_rotation);
+    canvas.translate(-center.dx, -center.dy);
+    
+    // ⚡ OPTIMIZADO: Renderizado simplificado (menos gradientes)
+    
+    // 1. Aura exterior simplificada (1 color)
+    final auraPaint = Paint()
+      ..color = config.color.withOpacity(0.3);
+    canvas.drawCircle(center, radius * 1.3, auraPaint);
+    
+    // 2. Cuerpo principal con gradiente simplificado (2 colores)
+    final boxPaint = Paint()
+      ..shader = Gradient.radial(
+        center - Offset(radius * 0.3, radius * 0.3),
+        radius,
+        [
+          Color.lerp(config.color, const Color(0xFFFFFFFF), 0.2)!,
+          config.color,
+        ],
+        [0.0, 1.0],
+      );
+    canvas.drawCircle(center, radius * 0.8, boxPaint);
+    
+    // 3. Brillo simple
+    final shinePaint = Paint()
+      ..color = const Color(0xFFFFFFFF).withOpacity(0.3);
+    canvas.drawCircle(center - Offset(radius * 0.3, radius * 0.3), radius * 0.3, shinePaint);
+    
+    // 4. Borde
+    final borderPaint = Paint()
+      ..color = Color.lerp(config.color, const Color(0xFF000000), 0.4)!
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    canvas.drawCircle(center, radius * 0.75, borderPaint);
+    
+    // 6. Indicador de rareza (estrellas para épicos)
+    if (config.rarity == PowerUpRarity.epic) {
+      _drawStars(canvas, center, radius);
+    }
+    
+    canvas.restore();
+    
+    // 7. Emoji/ícono en el centro
+    _drawEmoji(canvas, center);
+  }
+  
+  // ⚡ OPTIMIZADO: Estrellas simplificadas (círculos en lugar de paths)
+  void _drawStars(Canvas canvas, Offset center, double radius) {
+    final starPaint = Paint()
+      ..color = const Color(0xFFFFD700)
+      ..style = PaintingStyle.fill;
+    
+    // 3 pequeños círculos dorados giratorios (más simple que estrellas)
+    for (int i = 0; i < 3; i++) {
+      final angle = (_rotation * 2) + (i * (pi * 2 / 3));
+      final starPos = center + Offset(
+        cos(angle) * radius * 1.2,
+        sin(angle) * radius * 1.2,
+      );
+      
+      canvas.drawCircle(starPos, 2.5, starPaint);
+    }
+  }
+  
+  // ⚡ OPTIMIZADO: Usar TextPainter cacheado
+  void _drawEmoji(Canvas canvas, Offset center) {
+    _cachedEmojiPainter.paint(
       canvas,
-      center - Offset(textPainter.width / 2, textPainter.height / 2),
+      center - Offset(_cachedEmojiPainter.width / 2, _cachedEmojiPainter.height / 2),
     );
   }
 }

@@ -64,10 +64,10 @@ class _GameScreenState extends State<GameScreen> {
         return SnakeSkins.golden;
       case 'shadow':
         return SnakeSkins.shadow;
-      case 'rainbow':
-        return SnakeSkins.rainbow;
       case 'candy':
         return SnakeSkins.candy;
+      case 'royal':
+        return SnakeSkins.royal;
       default:
         return SnakeSkins.classic;
     }
@@ -83,7 +83,7 @@ class _GameScreenState extends State<GameScreen> {
       );
     }
     
-    final game = _game!
+    final game = _game!;
     
     return Scaffold(
       body: Stack(
@@ -107,7 +107,7 @@ class _GameScreenState extends State<GameScreen> {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                isMultiplayer ? '🌐 Multijugador' : '🎮 Modo Solo',
+                game.isMultiplayer ? '🌐 Multijugador' : '🎮 Modo Solo',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 16,
@@ -117,7 +117,7 @@ class _GameScreenState extends State<GameScreen> {
             ),
           ),
           // Widget de ranking (solo en multijugador)
-          if (isMultiplayer)
+          if (game.isMultiplayer)
             Positioned(
               top: 80,
               left: 10,

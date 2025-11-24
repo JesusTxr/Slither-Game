@@ -64,7 +64,7 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
   NetworkService? networkService;
   final Map<String, RemotePlayer> remotePlayers = {};
   double _networkUpdateTimer = 0;
-  final double _networkUpdateInterval = 0.033; // Enviar actualización cada 33ms (~30 FPS)
+  final double _networkUpdateInterval = 0.02; // Enviar actualización cada 20ms (~50 FPS) - Mejorado para fluidez
   bool isMultiplayer = false;
   String? roomCode;  // 🔑 Código de sala para multijugador
   bool waitingForPlayers = false;  // 🔑 Esperando a que todos los jugadores se conecten

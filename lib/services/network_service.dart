@@ -22,6 +22,8 @@ class NetworkService {
   Function(Map<String, dynamic>)? onAllPlayersReady;  // 👥 Callback cuando todos los jugadores están listos
   Function(Map<String, dynamic>)? onRankingUpdate;  // 🏆 Callback para actualizaciones de ranking
   Function(Map<String, dynamic>)? onGameEnd;  // 🏁 Callback para fin de juego
+  Function(Map<String, dynamic>)? onPowerUpSpawned;  // 🎁 Callback para nuevo power-up
+  Function(String)? onPowerUpCollected;  // 🎁 Callback cuando alguien recoge un power-up
   
   bool get isConnected => _channel != null;
   
@@ -104,6 +106,14 @@ class NetworkService {
         case 'gameEnd':
           print('🏁 Juego terminado');
           onGameEnd?.call(data);
+          break;
+        case 'powerUpSpawned':
+          print('🎁 Nuevo power-up spawneado');
+          onPowerUpSpawned?.call(data);
+          break;
+        case 'powerUpCollected':
+          print('🎁 Power-up recogido por ${data["playerId"]}');
+          onPowerUpCollected?.call(data['powerUpId']);
           break;
         default:
           print('Tipo de mensaje desconocido: $type');
@@ -189,6 +199,17 @@ class NetworkService {
       'type': 'playerRespawn',
       'x': x,
       'y': y,
+    }));
+  }
+  
+  // 🎁 Notificar al servidor cuando se recoge un power-up
+  void sendPowerUpCollected(String powerUpId) {
+    if (!isConnected) return;
+    
+    print('🎁 Notificando al servidor sobre recolección de power-up: $powerUpId');
+    _channel!.sink.add(jsonEncode({
+      'type': 'powerUpCollected',
+      'powerUpId': powerUpId,
     }));
   }
   

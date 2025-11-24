@@ -59,17 +59,20 @@ class GameScreen extends StatelessWidget {
               left: 10,
               child: _RankingDisplay(game: game),
             ),
-          // 🎁 Indicador de power-up activo
+          // 🎁 Indicador de power-up activo (centrado arriba)
           Positioned(
-            bottom: 120,
-            left: 20,
+            top: 15,
+            left: 0,
+            right: 0,
             child: StreamBuilder<double>(
               stream: Stream.periodic(const Duration(milliseconds: 100), (_) => game.powerUpRemainingTime),
               builder: (context, snapshot) {
-                return PowerUpIndicator(
-                  activePowerUp: game.activePowerUp,
-                  remainingTime: game.powerUpRemainingTime,
-                  totalDuration: game.powerUpTotalDuration,
+                return Center(
+                  child: PowerUpIndicator(
+                    activePowerUp: game.activePowerUp,
+                    remainingTime: game.powerUpRemainingTime,
+                    totalDuration: game.powerUpTotalDuration,
+                  ),
                 );
               },
             ),

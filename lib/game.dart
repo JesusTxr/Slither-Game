@@ -161,6 +161,8 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
     networkService!.onAllPlayersReady = _handleAllPlayersReady;
     networkService!.onRankingUpdate = _handleRankingUpdate;  // 🏆
     networkService!.onGameEnd = _handleGameEnd;  // 🏁
+    networkService!.onPowerUpSpawned = _handlePowerUpSpawned;  // 🎁
+    networkService!.onPowerUpCollected = _handlePowerUpCollectedByOther;  // 🎁
     
     try {
       await networkService!.connect();
@@ -236,6 +238,16 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
       _addServerFood(foodData);
     }
     print('✅ Comida agregada al mundo (total: ${world.children.whereType<Food>().length} orbes)');
+    
+    // 🎁 Cargar power-ups del servidor
+    if (data.containsKey('powerUps')) {
+      final powerUps = data['powerUps'] as List;
+      print('🎁 Power-ups recibidos del servidor: ${powerUps.length}');
+      for (var powerUpData in powerUps) {
+        _addServerPowerUp(powerUpData);
+      }
+      print('✅ Power-ups agregados al mundo');
+    }
     
     // 🔄 Si el juego ya comenzó, esperar a que todos los jugadores se conecten
     final gameStarted = data['gameStarted'] ?? false;
@@ -425,6 +437,87 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
     }
   }
   
+  // 🎁 Agregar power-up recibido del servidor
+  void _addServerPowerUp(Map<String, dynamic> powerUpData) {
+    final powerUpId = powerUpData['id'];
+    
+    // Verificar que no existe ya
+    final existingPowerUps = world.children.whereType<PowerUp>();
+    for (var powerUp in existingPowerUps) {
+      if (powerUp.id == powerUpId) {
+        print('⚠️ Power-up $powerUpId ya existe, saltando...');
+        return;
+      }
+    }
+    
+    try {
+      // Convertir el string del tipo a PowerUpType enum
+      final typeString = powerUpData['type'];
+      PowerUpType type;
+      
+      switch (typeString) {
+        case 'speedBoost':
+          type = PowerUpType.speedBoost;
+          break;
+        case 'shield':
+          type = PowerUpType.shield;
+          break;
+        case 'magnet':
+          type = PowerUpType.magnet;
+          break;
+        case 'ghostMode':
+          type = PowerUpType.ghostMode;
+          break;
+        case 'doublePoints':
+          type = PowerUpType.doublePoints;
+          break;
+        case 'dash':
+          type = PowerUpType.dash;
+          break;
+        case 'freeze':
+          type = PowerUpType.freeze;
+          break;
+        case 'shrinkRay':
+          type = PowerUpType.shrinkRay;
+          break;
+        case 'bomb':
+          type = PowerUpType.bomb;
+          break;
+        default:
+          print('❌ Tipo de power-up desconocido: $typeString');
+          return;
+      }
+      
+      final powerUp = PowerUp(
+        id: powerUpId,
+        type: type,
+        position: Vector2(powerUpData['x'].toDouble(), powerUpData['y'].toDouble()),
+      );
+      world.add(powerUp);
+      print('🎁 Power-up agregado: $typeString en (${powerUpData['x']}, ${powerUpData['y']})');
+    } catch (e) {
+      print('❌ Error agregando power-up: $e');
+    }
+  }
+  
+  // 🎁 Handler cuando el servidor genera un nuevo power-up
+  void _handlePowerUpSpawned(Map<String, dynamic> data) {
+    _addServerPowerUp(data['powerUp']);
+  }
+  
+  // 🎁 Handler cuando otro jugador recoge un power-up
+  void _handlePowerUpCollectedByOther(String powerUpId) {
+    // Buscar y eliminar el power-up del mundo
+    final existingPowerUps = world.children.whereType<PowerUp>().toList();
+    for (var powerUp in existingPowerUps) {
+      if (powerUp.id == powerUpId) {
+        powerUp.removeFromParent();
+        print('🎁 Power-up $powerUpId eliminado (recogido por otro jugador)');
+        break;
+      }
+    }
+  }
+  
   void _clearAllFood() {
     // Eliminar toda la comida del mundo
     final allFood = world.children.whereType<Food>().toList();
@@ -611,11 +704,13 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
       _powerUpCooldown -= dt;
     }
     
-    // Spawn de power-ups
-    _powerUpSpawnTimer += dt;
-    if (_powerUpSpawnTimer >= _powerUpSpawnInterval) {
-      _powerUpSpawnTimer = 0;
-      _spawnPowerUp();
+    // 🎮 Spawn de power-ups (solo en modo solo jugador)
+    if (!isMultiplayer) {
+      _powerUpSpawnTimer += dt;
+      if (_powerUpSpawnTimer >= _powerUpSpawnInterval) {
+        _powerUpSpawnTimer = 0;
+        _spawnPowerUp();
+      }
     }
     
     // Actualizar temporizador del power-up activo
@@ -677,6 +772,11 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
     
     // Iniciar cooldown
     _powerUpCooldown = _powerUpCooldownDuration;
+    
+    // 🌐 Notificar al servidor en modo multijugador
+    if (isMultiplayer && networkService != null) {
+      networkService!.sendPowerUpCollected(powerUp.id);
+    }
     
     print('🎁 Power-up recogido: ${config.name}');
   }

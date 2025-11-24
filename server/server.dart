@@ -8,6 +8,28 @@ import 'package:shelf_web_socket/shelf_web_socket.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:uuid/uuid.dart';
 
+// 🎁 Clase para representar un power-up
+class PowerUpData {
+  final String id;
+  final String type; // speedBoost, shield, magnet, etc.
+  final double x;
+  final double y;
+  
+  PowerUpData({
+    required this.id,
+    required this.type,
+    required this.x,
+    required this.y,
+  });
+  
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'type': type,
+    'x': x,
+    'y': y,
+  };
+}
+
 // Clase para representar un jugador
 class Player {
   final String id;
@@ -56,11 +78,13 @@ class GameRoom {
   final List<String> playerIds;
   bool isStarted;
   final Map<String, Food> foods;
+  final Map<String, PowerUpData> powerUps; // 🎁 Power-ups en la sala
   final DateTime createdAt;
   final Set<String> playersInGame; // Jugadores que ya se conectaron al juego
   int expectedPlayers; // Cuántos jugadores se esperan en el juego
   DateTime? gameStartTime; // Cuando comenzó el juego
   Timer? gameTimer; // Timer del juego
+  Timer? powerUpTimer; // 🎁 Timer para generar power-ups
   bool isGameEnded; // Si el juego terminó
   static const int gameDurationSeconds = 300; // 5 minutos
   
@@ -70,14 +94,17 @@ class GameRoom {
     List<String>? playerIds,
     this.isStarted = false,
     Map<String, Food>? foods,
+    Map<String, PowerUpData>? powerUps,
     DateTime? createdAt,
     Set<String>? playersInGame,
     this.expectedPlayers = 0,
     this.gameStartTime,
     this.gameTimer,
+    this.powerUpTimer,
     this.isGameEnded = false,
   }) : playerIds = playerIds ?? [hostId],
        foods = foods ?? {},
+       powerUps = powerUps ?? {},
        createdAt = createdAt ?? DateTime.now(),
        playersInGame = playersInGame ?? {};
        
@@ -231,6 +258,10 @@ class SlitherServer {
         case 'playerRespawn':
           handlePlayerRespawn(playerId, data);
           break;
+          
+        case 'powerUpCollected':
+          handlePowerUpCollected(playerId, data['powerUpId']);
+          break;
       }
     } catch (e) {
       print('Error procesando mensaje: $e');
@@ -322,6 +353,9 @@ class SlitherServer {
     // Obtener comida de la sala
     var roomFoods = room.foods.values.map((f) => f.toJson()).toList();
     
+    // 🎁 Obtener power-ups de la sala
+    var roomPowerUps = room.powerUps.values.map((p) => p.toJson()).toList();
+    
     player.channel.sink.add(jsonEncode({
       'type': 'init',
       'playerId': player.id,
@@ -331,6 +365,7 @@ class SlitherServer {
       'hostId': room.hostId,  // 🔑 IMPORTANTE: ID del host
       'players': roomPlayers,
       'foods': roomFoods,
+      'powerUps': roomPowerUps, // 🎁 Enviar power-ups existentes
       'gameStarted': room.isStarted,  // 🔑 Indicar si el juego ya comenzó
     }));
     
@@ -383,6 +418,74 @@ class SlitherServer {
         endGame(room);
       }
     });
+    
+    // 🎁 Iniciar timer de power-ups
+    startPowerUpTimer(room);
+  }
+  
+  // 🎁 Generar power-ups periódicamente
+  void startPowerUpTimer(GameRoom room) {
+    // Generar power-up inicial inmediatamente
+    generatePowerUp(room);
+    
+    // Timer que genera power-ups cada 20 segundos
+    room.powerUpTimer = Timer.periodic(Duration(seconds: 20), (timer) {
+      if (room.isGameEnded) {
+        timer.cancel();
+        return;
+      }
+      
+      // Máximo 5 power-ups en el mapa
+      if (room.powerUps.length < 5) {
+        generatePowerUp(room);
+      }
+    });
+  }
+  
+  void generatePowerUp(GameRoom room) {
+    final random = Random();
+    final uuid = Uuid();
+    
+    // Generar posición aleatoria en el mapa (6000x6000)
+    final x = random.nextDouble() * 6000;
+    final y = random.nextDouble() * 6000;
+    
+    // Obtener tipo aleatorio de power-up
+    final types = [
+      'speedBoost', 'shield', 'magnet', 'ghostMode', 'doublePoints',
+      'dash', 'freeze', 'shrinkRay', 'bomb'
+    ];
+    
+    // Sistema de rareza: 60% común, 30% raro, 10% épico
+    final rarityRoll = random.nextInt(100);
+    String type;
+    if (rarityRoll < 60) {
+      // Común (speedBoost, shield, magnet)
+      type = types[random.nextInt(3)];
+    } else if (rarityRoll < 90) {
+      // Raro (ghostMode, doublePoints, dash)
+      type = types[3 + random.nextInt(3)];
+    } else {
+      // Épico (freeze, shrinkRay, bomb)
+      type = types[6 + random.nextInt(3)];
+    }
+    
+    final powerUp = PowerUpData(
+      id: uuid.v4(),
+      type: type,
+      x: x,
+      y: y,
+    );
+    
+    room.powerUps[powerUp.id] = powerUp;
+    
+    // Broadcast del nuevo power-up a todos los jugadores
+    broadcastToRoom(room.code, {
+      'type': 'powerUpSpawned',
+      'powerUp': powerUp.toJson(),
+    });
+    
+    print('🎁 Power-up generado en sala ${room.code}: $type en ($x, $y)');
   }
   
   void sendRankingUpdate(GameRoom room) {
@@ -544,6 +647,7 @@ class SlitherServer {
     for (var code in toRemove) {
       final room = rooms.remove(code);
       room?.gameTimer?.cancel(); // Cancelar timer si existe
+      room?.powerUpTimer?.cancel(); // 🎁 Cancelar timer de power-ups
       print('🧹 Sala vacía eliminada: $code');
     }
   }
@@ -605,6 +709,32 @@ class SlitherServer {
       'score': player.score,
       'nickname': player.nickname,
     });
+  }
+  
+  // 🎁 Manejar cuando un jugador recoge un power-up
+  void handlePowerUpCollected(String playerId, String powerUpId) {
+    var player = players[playerId];
+    if (player == null || player.roomCode == null) return;
+    
+    var room = rooms[player.roomCode];
+    if (room == null) return;
+    
+    // Verificar que el power-up existe
+    if (!room.powerUps.containsKey(powerUpId)) return;
+    
+    final powerUp = room.powerUps[powerUpId]!;
+    
+    // Eliminar el power-up del mapa
+    room.powerUps.remove(powerUpId);
+    
+    // Notificar a todos los jugadores que el power-up fue recogido
+    broadcastToRoom(player.roomCode!, {
+      'type': 'powerUpCollected',
+      'powerUpId': powerUpId,
+      'playerId': playerId,
+    });
+    
+    print('🎁 Jugador $playerId recogió power-up ${powerUp.type} en sala ${player.roomCode}');
   }
   
   void broadcastPlayerUpdate(Player player) {

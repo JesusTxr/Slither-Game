@@ -54,6 +54,25 @@ class MainMenuScreen extends StatelessWidget {
                   },
                   child: const Text('Multijugador', style: TextStyle(fontSize: 18)),
                 ),
+                const SizedBox(height: 20),
+                
+                // 🎨 Botón Tienda de Skins
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(200, 50),
+                    backgroundColor: const Color(0xFFFF6B6B),
+                  ),
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/skin_shop');
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Text('🎨 ', style: TextStyle(fontSize: 20)),
+                      Text('Tienda de Skins', style: TextStyle(fontSize: 18)),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 40),
                 
                 // Instrucciones

@@ -37,6 +37,7 @@ class GameConfig {
   }
   
   static String? playerNickname;
+  static String selectedSkinId = 'classic'; // 🎨 Skin seleccionada por el jugador
   
   // 📱 INSTRUCCIONES:
   // 

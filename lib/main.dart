@@ -7,6 +7,7 @@ import 'screens/main_menu_screen.dart';
 import 'screens/multiplayer_menu_screen.dart';
 import 'screens/lobby_screen.dart';
 import 'screens/game_screen.dart';
+import 'screens/skin_shop_screen.dart';
 import 'config/supabase_config.dart';
 
 Future<void> main() async {
@@ -46,6 +47,7 @@ class MyApp extends StatelessWidget {
         '/multiplayer': (context) => const MultiplayerMenuScreen(),
         '/lobby': (context) => const LobbyScreen(),
         '/game': (context) => const GameScreen(),
+        '/skin_shop': (context) => const SkinShopScreen(),
       },
     );
   }

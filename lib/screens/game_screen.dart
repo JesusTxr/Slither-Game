@@ -1,14 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flame/game.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../game.dart';
 import '../config/game_config.dart';
+import '../config/snake_skins.dart';
 import '../widgets/power_up_indicator.dart';
 
-class GameScreen extends StatelessWidget {
+class GameScreen extends StatefulWidget {
   const GameScreen({Key? key}) : super(key: key);
   
   @override
-  Widget build(BuildContext context) {
+  State<GameScreen> createState() => _GameScreenState();
+}
+
+class _GameScreenState extends State<GameScreen> {
+  SlitherGame? _game;
+  bool _isLoading = true;
+  
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_game == null) {
+      _initializeGame();
+    }
+  }
+  
+  Future<void> _initializeGame() async {
     // Obtener argumentos
     final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     final isMultiplayer = args?['multiplayer'] ?? false;
@@ -17,9 +34,56 @@ class GameScreen extends StatelessWidget {
     // Configurar modo de juego
     GameConfig.isMultiplayer = isMultiplayer;
     
-    print('🎮 GameScreen - Multiplayer: $isMultiplayer, RoomCode: $roomCode');
+    // 🎨 Cargar skin guardada
+    final prefs = await SharedPreferences.getInstance();
+    final skinId = prefs.getString('selected_skin') ?? 'classic';
+    final skin = _getSkinById(skinId);
     
-    final game = SlitherGame(roomCode: roomCode);
+    // Guardar skinId para enviar al servidor
+    GameConfig.selectedSkinId = skinId;
+    
+    print('🎮 GameScreen - Multiplayer: $isMultiplayer, RoomCode: $roomCode, Skin: $skinId');
+    
+    setState(() {
+      _game = SlitherGame(roomCode: roomCode, skin: skin);
+      _isLoading = false;
+    });
+  }
+  
+  SnakeSkin _getSkinById(String id) {
+    switch (id) {
+      case 'classic':
+        return SnakeSkins.classic;
+      case 'fire':
+        return SnakeSkins.fire;
+      case 'ocean':
+        return SnakeSkins.ocean;
+      case 'toxic':
+        return SnakeSkins.toxic;
+      case 'golden':
+        return SnakeSkins.golden;
+      case 'shadow':
+        return SnakeSkins.shadow;
+      case 'rainbow':
+        return SnakeSkins.rainbow;
+      case 'candy':
+        return SnakeSkins.candy;
+      default:
+        return SnakeSkins.classic;
+    }
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading || _game == null) {
+      return Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+    
+    final game = _game!
     
     return Scaffold(
       body: Stack(

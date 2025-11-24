@@ -26,10 +26,10 @@ class RemotePlayer extends PositionComponent
   Vector2? _targetPosition;
   Vector2? _lastPosition;
   Vector2? _velocity; // Velocidad actual para extrapolación
-  double _interpolationSpeed = 10.0; // Aumentado para más suavidad
+  double _interpolationSpeed = 15.0; // MUY rápido para eliminar lag visual
   final List<_PositionSnapshot> _positionBuffer = []; // Buffer de posiciones
   double _timeSinceLastUpdate = 0;
-  final double _maxExtrapolationTime = 0.5; // Máximo tiempo de extrapolación
+  final double _maxExtrapolationTime = 0.8; // Más tiempo de extrapolación
   
   RemotePlayer({
     required this.playerId,
@@ -264,10 +264,11 @@ class RemotePlayer extends PositionComponent
     _targetPosition = newPosition.clone();
     _timeSinceLastUpdate = 0; // Reiniciar timer
     
-    // Calcular velocidad estimada
+    // Calcular velocidad estimada con mayor precisión
     if (_lastPosition != null) {
       final delta = newPosition - _lastPosition!;
-      _velocity = delta * 30; // Asumiendo ~30 FPS de actualizaciones
+      // Factor más alto para compensar latencia y mantener movimiento fluido
+      _velocity = delta * 60; // Asumiendo 60 FPS para predicción más agresiva
     }
   }
 
@@ -286,11 +287,11 @@ class RemotePlayer extends PositionComponent
         // Calcular velocidad suave
         final direction = (_targetPosition! - position).normalized();
         
-        // Interpolación adaptativa (más rápida si está lejos, más suave si está cerca)
-        final adaptiveSpeed = _interpolationSpeed * (1.0 + (distance / 100.0).clamp(0.0, 2.0));
+        // Interpolación MUY adaptativa (mucho más rápida)
+        final adaptiveSpeed = _interpolationSpeed * (1.5 + (distance / 50.0).clamp(0.0, 4.0));
         final moveDistance = adaptiveSpeed * distance * dt;
         
-        // Mover hacia el objetivo
+        // Mover hacia el objetivo (más agresivo)
         final movement = direction * moveDistance.clamp(0, distance);
         position += movement;
         
@@ -307,9 +308,10 @@ class RemotePlayer extends PositionComponent
         _velocity = Vector2.zero();
       }
     } else if (_velocity != null && _timeSinceLastUpdate < _maxExtrapolationTime) {
-      // 🚀 Extrapolación: continuar movimiento cuando no hay datos nuevos
-      final extrapolationFactor = 1.0 - (_timeSinceLastUpdate / _maxExtrapolationTime);
-      final movement = _velocity! * dt * extrapolationFactor;
+      // 🚀 Extrapolación AGRESIVA: continuar movimiento cuando no hay datos nuevos
+      // Reducir más lentamente para mantener movimiento fluido por más tiempo
+      final extrapolationFactor = 1.0 - ((_timeSinceLastUpdate / _maxExtrapolationTime) * 0.7);
+      final movement = _velocity! * dt * extrapolationFactor.clamp(0.3, 1.0);
       position += movement;
       
       // Agregar al path

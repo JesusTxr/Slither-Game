@@ -64,7 +64,9 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
   NetworkService? networkService;
   final Map<String, RemotePlayer> remotePlayers = {};
   double _networkUpdateTimer = 0;
-  final double _networkUpdateInterval = 0.02; // Enviar actualización cada 20ms (~50 FPS) - Mejorado para fluidez
+  final double _networkUpdateInterval = 0.016; // 60 FPS - Ultra fluido
+  Vector2? _lastSentPosition; // Para detectar cambios significativos
+  double _minDistanceToSend = 3.0; // Enviar solo si se movió más de 3px
   bool isMultiplayer = false;
   String? roomCode;  // 🔑 Código de sala para multijugador
   bool waitingForPlayers = false;  // 🔑 Esperando a que todos los jugadores se conecten
@@ -730,7 +732,20 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
       _networkUpdateTimer += dt;
       if (_networkUpdateTimer >= _networkUpdateInterval) {
         _networkUpdateTimer = 0;
-        networkService!.sendMove(playerHead.position, targetDirection);
+        
+        // Solo enviar si hay cambio significativo (reduce tráfico de red)
+        bool shouldSend = false;
+        if (_lastSentPosition == null) {
+          shouldSend = true;
+        } else {
+          final distance = (playerHead.position - _lastSentPosition!).length;
+          shouldSend = distance >= _minDistanceToSend;
+        }
+        
+        if (shouldSend) {
+          networkService!.sendMove(playerHead.position, targetDirection);
+          _lastSentPosition = playerHead.position.clone();
+        }
       }
     }
 

@@ -27,6 +27,7 @@ class NetworkService {
   Function(Map<String, dynamic>)? onPlayerFrozen;  // ❄️ Callback cuando un jugador es congelado
   Function(Map<String, dynamic>)? onPlayerShrunk;  // 📏 Callback cuando un jugador es reducido
   Function(Map<String, dynamic>)? onBombExploded;  // 💣 Callback cuando explota una bomba
+  Function(Map<String, dynamic>)? onDashUsed;  // 🎯 Callback cuando se usa Dash
   
   bool get isConnected => _channel != null;
   
@@ -129,6 +130,10 @@ class NetworkService {
         case 'bombExploded':
           print('💣 Bomba explotada por ${data["playerId"]}');
           onBombExploded?.call(data);
+          break;
+        case 'dashUsed':
+          print('🎯 Dash usado por ${data["playerId"]}');
+          onDashUsed?.call(data);
           break;
         default:
           print('Tipo de mensaje desconocido: $type');
@@ -258,6 +263,20 @@ class NetworkService {
     _channel!.sink.add(jsonEncode({
       'type': 'powerUpBomb',
       'affectedPlayers': affectedPlayers,
+    }));
+  }
+  
+  // 🎯 Notificar al servidor sobre el uso de Dash
+  void sendPowerUpDash(double startX, double startY, double endX, double endY) {
+    if (!isConnected) return;
+    
+    print('🎯 Notificando al servidor sobre Dash');
+    _channel!.sink.add(jsonEncode({
+      'type': 'powerUpDash',
+      'startX': startX,
+      'startY': startY,
+      'endX': endX,
+      'endY': endY,
     }));
   }
   

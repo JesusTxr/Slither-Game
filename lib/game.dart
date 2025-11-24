@@ -7,6 +7,7 @@ import 'package:flame/experimental.dart';
 import 'package:flame/game.dart';
 import 'package:slither_game/components/background.dart';
 import 'package:slither_game/components/body_segment.dart';
+import 'package:slither_game/components/dash_trail.dart';
 import 'package:slither_game/components/food.dart';
 import 'package:slither_game/components/joystick.dart';
 import 'package:slither_game/components/minimap.dart';
@@ -168,6 +169,7 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
     networkService!.onPlayerFrozen = _handlePlayerFrozen;  // ❄️
     networkService!.onPlayerShrunk = _handlePlayerShrunk;  // 📏
     networkService!.onBombExploded = _handleBombExploded;  // 💣
+    networkService!.onDashUsed = _handleDashUsed;  // 🎯
     
     try {
       await networkService!.connect();
@@ -611,6 +613,35 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
     print('💣 Bomba explotada por $attackerId: ${affectedPlayers.length} jugadores afectados');
   }
   
+  // 🎯 Handler cuando otro jugador usa Dash
+  void _handleDashUsed(Map<String, dynamic> data) {
+    final playerId = data['playerId'] as String;
+    final startX = data['startX'] as double;
+    final startY = data['startY'] as double;
+    final endX = data['endX'] as double;
+    final endY = data['endY'] as double;
+    
+    final startPosition = Vector2(startX, startY);
+    final endPosition = Vector2(endX, endY);
+    final direction = (endPosition - startPosition).normalized();
+    final distance = (endPosition - startPosition).length;
+    
+    // Crear estela peligrosa para el otro jugador
+    final trailSegments = 15;
+    for (int i = 0; i < trailSegments; i++) {
+      final progress = i / trailSegments;
+      final trailPosition = startPosition + (direction * distance * progress);
+      
+      final trail = DashTrail(
+        position: trailPosition,
+        ownerId: playerId,
+      );
+      world.add(trail);
+    }
+    
+    print('🎯 Dash de jugador $playerId visualizado (estela peligrosa creada)');
+  }
+  
   void _clearAllFood() {
     // Eliminar toda la comida del mundo
     final allFood = world.children.whereType<Food>().toList();
@@ -955,9 +986,10 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
     }
   }
   
-  // 🎯 Dash - Impulso rápido
+  // 🎯 Dash - Impulso rápido con estela peligrosa
   void _applyDash() {
     final dashDistance = 400.0;
+    final startPosition = playerHead.position.clone();
     final newPosition = playerHead.position + (targetDirection * dashDistance);
     
     // Verificar límites del mapa
@@ -966,10 +998,36 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
       worldSize - Vector2(currentRadius, currentRadius),
     );
     
+    // Mover al jugador
     playerHead.position = newPosition;
     
-    // TODO: Dejar estela peligrosa temporal
-    print('🎯 ¡Dash activado!');
+    // 🔥 Crear estela peligrosa a lo largo del camino
+    final trailSegments = 15; // 15 segmentos de estela
+    final myPlayerId = networkService?.playerId ?? 'local';
+    
+    for (int i = 0; i < trailSegments; i++) {
+      final progress = i / trailSegments;
+      final trailPosition = startPosition + (targetDirection * dashDistance * progress);
+      
+      // Crear segmento de estela
+      final trail = DashTrail(
+        position: trailPosition,
+        ownerId: myPlayerId,
+      );
+      world.add(trail);
+    }
+    
+    // 🌐 Notificar al servidor en modo multijugador
+    if (isMultiplayer && networkService != null) {
+      networkService!.sendPowerUpDash(
+        startPosition.x,
+        startPosition.y,
+        newPosition.x,
+        newPosition.y,
+      );
+    }
+    
+    print('🎯 ¡Dash activado! Estela peligrosa creada');
   }
   
   // ❄️ Freeze - Congela jugadores cercanos

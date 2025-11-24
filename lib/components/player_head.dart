@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:slither_game/components/body_segment.dart';
+import 'package:slither_game/components/dash_trail.dart';
 import 'package:slither_game/components/food.dart';
 import 'package:slither_game/components/power_up.dart';
 import 'package:slither_game/config/snake_skins.dart';
@@ -273,6 +274,21 @@ class PlayerHead extends PositionComponent
     // 🎁 Colisión con power-up
     if (other is PowerUp) {
       game.collectPowerUp(other);
+    }
+    
+    // 🎯 Colisión con estela de Dash
+    if (other is DashTrail) {
+      final myPlayerId = game.networkService?.playerId;
+      // Solo morir si no es mi propia estela
+      if (other.ownerId != myPlayerId) {
+        // 🛡️ Verificar si está activo shield o ghost mode
+        if (!game.isShieldActive && !game.isGhostMode) {
+          print('💥 ¡Colisión con estela de Dash de ${other.ownerId}!');
+          game.onPlayerDeath();
+        } else {
+          print('✨ ¡Estela de Dash evitada! Power-up activo');
+        }
+      }
     }
     
     // Colisión con segmento de cuerpo de otro jugador

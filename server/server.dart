@@ -274,6 +274,10 @@ class SlitherServer {
         case 'powerUpBomb':
           handlePowerUpBomb(playerId, data['affectedPlayers']);
           break;
+          
+        case 'powerUpDash':
+          handlePowerUpDash(playerId, data);
+          break;
       }
     } catch (e) {
       print('Error procesando mensaje: $e');
@@ -811,6 +815,24 @@ class SlitherServer {
       'playerId': playerId,
       'affectedPlayers': affectedPlayers,
     });
+  }
+  
+  // 🎯 Manejar power-up Dash
+  void handlePowerUpDash(String playerId, Map<String, dynamic> data) {
+    var player = players[playerId];
+    if (player == null || player.roomCode == null) return;
+    
+    print('🎯 Jugador $playerId usó Dash en sala ${player.roomCode}');
+    
+    // Broadcast a todos los jugadores en la sala (excepto el que lo usó)
+    broadcastToRoom(player.roomCode!, {
+      'type': 'dashUsed',
+      'playerId': playerId,
+      'startX': data['startX'],
+      'startY': data['startY'],
+      'endX': data['endX'],
+      'endY': data['endY'],
+    }, exclude: playerId);
   }
   
   void broadcastPlayerUpdate(Player player) {

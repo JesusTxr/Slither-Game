@@ -51,6 +51,8 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
   double pointsMultiplier = 1.0;
   double _powerUpCooldown = 0;
   final double _powerUpCooldownDuration = 2.0; // 2 segundos entre power-ups
+  bool isFrozen = false; // ❄️ Si el jugador está congelado
+  double _frozenTimer = 0; // ❄️ Tiempo restante de congelación
 
   // World y CameraComponent modernos
   late final World world;
@@ -163,6 +165,9 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
     networkService!.onGameEnd = _handleGameEnd;  // 🏁
     networkService!.onPowerUpSpawned = _handlePowerUpSpawned;  // 🎁
     networkService!.onPowerUpCollected = _handlePowerUpCollectedByOther;  // 🎁
+    networkService!.onPlayerFrozen = _handlePlayerFrozen;  // ❄️
+    networkService!.onPlayerShrunk = _handlePlayerShrunk;  // 📏
+    networkService!.onBombExploded = _handleBombExploded;  // 💣
     
     try {
       await networkService!.connect();
@@ -518,6 +523,94 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
     }
   }
   
+  // ❄️ Handler cuando un jugador es congelado
+  void _handlePlayerFrozen(Map<String, dynamic> data) {
+    final attackerId = data['playerId'] as String;
+    final affectedPlayers = data['affectedPlayers'] as List;
+    final duration = data['duration'] as double;
+    
+    // Si soy uno de los afectados, congelarme
+    if (affectedPlayers.contains(networkService?.playerId)) {
+      isFrozen = true;
+      _frozenTimer = duration;
+      print('❄️ ¡Has sido congelado por $attackerId por $duration segundos!');
+    }
+    
+    print('❄️ Freeze usado por $attackerId: ${affectedPlayers.length} jugadores congelados');
+  }
+  
+  // 📏 Handler cuando un jugador es reducido
+  void _handlePlayerShrunk(Map<String, dynamic> data) {
+    final attackerId = data['playerId'] as String;
+    final affectedPlayers = data['affectedPlayers'] as Map<String, dynamic>;
+    
+    // Si soy uno de los afectados, reducir mi tamaño
+    if (affectedPlayers.containsKey(networkService?.playerId)) {
+      final segmentsToRemove = affectedPlayers[networkService?.playerId] as int;
+      
+      // Reducir bodyLength
+      bodyLength = (bodyLength - segmentsToRemove).clamp(5, 1000);
+      
+      // Eliminar segmentos visualmente
+      final segmentsToDelete = body.length > bodyLength ? body.length - bodyLength : 0;
+      for (int i = 0; i < segmentsToDelete; i++) {
+        if (body.isNotEmpty) {
+          body.last.removeFromParent();
+          body.removeLast();
+        }
+      }
+      
+      print('📏 ¡Has sido reducido por $attackerId! Perdiste $segmentsToRemove segmentos');
+    }
+    
+    // Actualizar jugadores remotos
+    affectedPlayers.forEach((playerId, segmentsRemoved) {
+      if (remotePlayers.containsKey(playerId)) {
+        final remotePlayer = remotePlayers[playerId]!;
+        remotePlayer.bodyLength = (remotePlayer.bodyLength - (segmentsRemoved as int)).clamp(5, 1000);
+        print('📏 Jugador remoto $playerId reducido');
+      }
+    });
+    
+    print('📏 Shrink Ray usado por $attackerId: ${affectedPlayers.length} jugadores afectados');
+  }
+  
+  // 💣 Handler cuando explota una bomba
+  void _handleBombExploded(Map<String, dynamic> data) {
+    final attackerId = data['playerId'] as String;
+    final affectedPlayers = data['affectedPlayers'] as Map<String, dynamic>;
+    
+    // Si soy uno de los afectados, reducir mi tamaño
+    if (affectedPlayers.containsKey(networkService?.playerId)) {
+      final segmentsDestroyed = affectedPlayers[networkService?.playerId] as int;
+      
+      // Reducir bodyLength
+      bodyLength = (bodyLength - segmentsDestroyed).clamp(5, 1000);
+      
+      // Eliminar segmentos visualmente
+      final segmentsToDelete = body.length > bodyLength ? body.length - bodyLength : 0;
+      for (int i = 0; i < segmentsToDelete; i++) {
+        if (body.isNotEmpty) {
+          body.last.removeFromParent();
+          body.removeLast();
+        }
+      }
+      
+      print('💣 ¡Has sido alcanzado por una bomba de $attackerId! Perdiste $segmentsDestroyed segmentos');
+    }
+    
+    // Actualizar jugadores remotos
+    affectedPlayers.forEach((playerId, segmentsDestroyed) {
+      if (remotePlayers.containsKey(playerId)) {
+        final remotePlayer = remotePlayers[playerId]!;
+        remotePlayer.bodyLength = (remotePlayer.bodyLength - (segmentsDestroyed as int)).clamp(5, 1000);
+        print('💣 Jugador remoto $playerId afectado por bomba');
+      }
+    });
+    
+    print('💣 Bomba explotada por $attackerId: ${affectedPlayers.length} jugadores afectados');
+  }
+  
   void _clearAllFood() {
     // Eliminar toda la comida del mundo
     final allFood = world.children.whereType<Food>().toList();
@@ -726,6 +819,15 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
     if (isMagnetActive) {
       _applyMagnetEffect();
     }
+    
+    // ❄️ Actualizar temporizador de congelación
+    if (isFrozen && _frozenTimer > 0) {
+      _frozenTimer -= dt;
+      if (_frozenTimer <= 0) {
+        isFrozen = false;
+        print('❄️ Ya no estás congelado');
+      }
+    }
   }
   
   void _spawnPowerUp() {
@@ -873,13 +975,24 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
   // ❄️ Freeze - Congela jugadores cercanos
   void _applyFreeze() {
     final freezeRange = 400.0;
+    List<String> affectedPlayers = [];
     
     for (var player in remotePlayers.values) {
       final distance = (player.position - playerHead.position).length;
       if (distance < freezeRange) {
-        // TODO: Enviar al servidor para congelar al jugador
-        print('❄️ Jugador ${player.playerId} congelado!');
+        affectedPlayers.add(player.playerId);
+        print('❄️ Jugador ${player.playerId} será congelado!');
       }
+    }
+    
+    if (affectedPlayers.isNotEmpty) {
+      // Enviar al servidor en modo multijugador
+      if (isMultiplayer && networkService != null) {
+        networkService!.sendPowerUpFreeze(affectedPlayers);
+      }
+      print('❄️ ¡Freeze activado! ${affectedPlayers.length} jugadores afectados');
+    } else {
+      print('❄️ Freeze activado pero no hay jugadores cercanos');
     }
   }
   
@@ -887,14 +1000,25 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
   void _applyShrinkRay() {
     final shrinkRange = 300.0;
     final shrinkPercentage = 0.3; // 30%
+    Map<String, int> affectedPlayers = {};
     
     for (var player in remotePlayers.values) {
       final distance = (player.position - playerHead.position).length;
       if (distance < shrinkRange) {
-        final segmentsToRemove = (player.bodyLength * shrinkPercentage).round();
-        // TODO: Enviar al servidor para reducir tamaño
-        print('📏 Jugador ${player.playerId} reducido en $segmentsToRemove segmentos!');
+        final segmentsToRemove = (player.bodyLength * shrinkPercentage).round().clamp(1, player.bodyLength - 5);
+        affectedPlayers[player.playerId] = segmentsToRemove;
+        print('📏 Jugador ${player.playerId} será reducido en $segmentsToRemove segmentos!');
       }
+    }
+    
+    if (affectedPlayers.isNotEmpty) {
+      // Enviar al servidor en modo multijugador
+      if (isMultiplayer && networkService != null) {
+        networkService!.sendPowerUpShrinkRay(affectedPlayers);
+      }
+      print('📏 ¡Shrink Ray activado! ${affectedPlayers.length} jugadores afectados');
+    } else {
+      print('📏 Shrink Ray activado pero no hay jugadores cercanos');
     }
   }
   
@@ -902,20 +1026,34 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
   void _applyBomb() {
     final bombRange = 250.0;
     
-    // Eliminar segmentos de cuerpos cercanos
+    // Contar segmentos destruidos por jugador
+    Map<String, int> affectedPlayers = {};
     final allSegments = world.children.whereType<BodySegment>().toList();
-    int destroyedSegments = 0;
     
     for (var segment in allSegments) {
       final distance = (segment.position - playerHead.position).length;
-      if (distance < bombRange && segment.ownerId != networkService?.playerId) {
+      if (distance < bombRange && segment.ownerId != null && segment.ownerId != networkService?.playerId) {
+        // Eliminar visualmente el segmento
         segment.removeFromParent();
-        destroyedSegments++;
+        
+        // Contar para el jugador afectado
+        affectedPlayers[segment.ownerId!] = (affectedPlayers[segment.ownerId] ?? 0) + 1;
       }
     }
     
+    if (affectedPlayers.isNotEmpty) {
+      // Enviar al servidor en modo multijugador
+      if (isMultiplayer && networkService != null) {
+        networkService!.sendPowerUpBomb(affectedPlayers);
+      }
+      
+      final totalDestroyed = affectedPlayers.values.fold(0, (sum, count) => sum + count);
+      print('💣 ¡BOOM! $totalDestroyed segmentos destruidos de ${affectedPlayers.length} jugadores');
+    } else {
+      print('💣 Bomba explotada pero no hay jugadores cercanos');
+    }
+    
     // TODO: Efecto visual de explosión
-    print('💣 ¡BOOM! $destroyedSegments segmentos destruidos!');
   }
   
   // 🎁 ==================== FIN SISTEMA DE POWER-UPS ====================

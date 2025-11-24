@@ -24,6 +24,9 @@ class NetworkService {
   Function(Map<String, dynamic>)? onGameEnd;  // 🏁 Callback para fin de juego
   Function(Map<String, dynamic>)? onPowerUpSpawned;  // 🎁 Callback para nuevo power-up
   Function(String)? onPowerUpCollected;  // 🎁 Callback cuando alguien recoge un power-up
+  Function(Map<String, dynamic>)? onPlayerFrozen;  // ❄️ Callback cuando un jugador es congelado
+  Function(Map<String, dynamic>)? onPlayerShrunk;  // 📏 Callback cuando un jugador es reducido
+  Function(Map<String, dynamic>)? onBombExploded;  // 💣 Callback cuando explota una bomba
   
   bool get isConnected => _channel != null;
   
@@ -114,6 +117,18 @@ class NetworkService {
         case 'powerUpCollected':
           print('🎁 Power-up recogido por ${data["playerId"]}');
           onPowerUpCollected?.call(data['powerUpId']);
+          break;
+        case 'playerFrozen':
+          print('❄️ Jugador congelado: ${data["playerId"]}');
+          onPlayerFrozen?.call(data);
+          break;
+        case 'playerShrunk':
+          print('📏 Jugador reducido: ${data["playerId"]}');
+          onPlayerShrunk?.call(data);
+          break;
+        case 'bombExploded':
+          print('💣 Bomba explotada por ${data["playerId"]}');
+          onBombExploded?.call(data);
           break;
         default:
           print('Tipo de mensaje desconocido: $type');
@@ -210,6 +225,39 @@ class NetworkService {
     _channel!.sink.add(jsonEncode({
       'type': 'powerUpCollected',
       'powerUpId': powerUpId,
+    }));
+  }
+  
+  // ❄️ Notificar al servidor sobre el uso de Freeze
+  void sendPowerUpFreeze(List<String> affectedPlayerIds) {
+    if (!isConnected) return;
+    
+    print('❄️ Notificando al servidor sobre Freeze: ${affectedPlayerIds.length} jugadores afectados');
+    _channel!.sink.add(jsonEncode({
+      'type': 'powerUpFreeze',
+      'affectedPlayers': affectedPlayerIds,
+    }));
+  }
+  
+  // 📏 Notificar al servidor sobre el uso de Shrink Ray
+  void sendPowerUpShrinkRay(Map<String, int> affectedPlayers) {
+    if (!isConnected) return;
+    
+    print('📏 Notificando al servidor sobre Shrink Ray: ${affectedPlayers.length} jugadores afectados');
+    _channel!.sink.add(jsonEncode({
+      'type': 'powerUpShrinkRay',
+      'affectedPlayers': affectedPlayers,
+    }));
+  }
+  
+  // 💣 Notificar al servidor sobre el uso de Bomb
+  void sendPowerUpBomb(Map<String, int> affectedPlayers) {
+    if (!isConnected) return;
+    
+    print('💣 Notificando al servidor sobre Bomb: ${affectedPlayers.length} jugadores afectados');
+    _channel!.sink.add(jsonEncode({
+      'type': 'powerUpBomb',
+      'affectedPlayers': affectedPlayers,
     }));
   }
   

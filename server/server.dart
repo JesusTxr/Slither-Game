@@ -262,6 +262,18 @@ class SlitherServer {
         case 'powerUpCollected':
           handlePowerUpCollected(playerId, data['powerUpId']);
           break;
+          
+        case 'powerUpFreeze':
+          handlePowerUpFreeze(playerId, data['affectedPlayers']);
+          break;
+          
+        case 'powerUpShrinkRay':
+          handlePowerUpShrinkRay(playerId, data['affectedPlayers']);
+          break;
+          
+        case 'powerUpBomb':
+          handlePowerUpBomb(playerId, data['affectedPlayers']);
+          break;
       }
     } catch (e) {
       print('Error procesando mensaje: $e');
@@ -735,6 +747,70 @@ class SlitherServer {
     });
     
     print('🎁 Jugador $playerId recogió power-up ${powerUp.type} en sala ${player.roomCode}');
+  }
+  
+  // ❄️ Manejar power-up Freeze
+  void handlePowerUpFreeze(String playerId, List<dynamic> affectedPlayerIds) {
+    var player = players[playerId];
+    if (player == null || player.roomCode == null) return;
+    
+    print('❄️ Jugador $playerId usó Freeze en sala ${player.roomCode}');
+    
+    // Broadcast a todos los jugadores en la sala
+    broadcastToRoom(player.roomCode!, {
+      'type': 'playerFrozen',
+      'playerId': playerId,
+      'affectedPlayers': affectedPlayerIds,
+      'duration': 3.0, // 3 segundos
+    });
+  }
+  
+  // 📏 Manejar power-up Shrink Ray
+  void handlePowerUpShrinkRay(String playerId, Map<String, dynamic> affectedPlayers) {
+    var player = players[playerId];
+    if (player == null || player.roomCode == null) return;
+    
+    print('📏 Jugador $playerId usó Shrink Ray en sala ${player.roomCode}');
+    
+    // Actualizar el tamaño de los jugadores afectados
+    affectedPlayers.forEach((targetId, segmentsToRemove) {
+      var targetPlayer = players[targetId];
+      if (targetPlayer != null) {
+        targetPlayer.bodyLength = (targetPlayer.bodyLength - segmentsToRemove).clamp(5, 1000);
+        print('📏 Jugador $targetId reducido de ${targetPlayer.bodyLength + segmentsToRemove} a ${targetPlayer.bodyLength}');
+      }
+    });
+    
+    // Broadcast a todos los jugadores en la sala
+    broadcastToRoom(player.roomCode!, {
+      'type': 'playerShrunk',
+      'playerId': playerId,
+      'affectedPlayers': affectedPlayers,
+    });
+  }
+  
+  // 💣 Manejar power-up Bomb
+  void handlePowerUpBomb(String playerId, Map<String, dynamic> affectedPlayers) {
+    var player = players[playerId];
+    if (player == null || player.roomCode == null) return;
+    
+    print('💣 Jugador $playerId usó Bomb en sala ${player.roomCode}');
+    
+    // Actualizar el tamaño de los jugadores afectados
+    affectedPlayers.forEach((targetId, segmentsDestroyed) {
+      var targetPlayer = players[targetId];
+      if (targetPlayer != null) {
+        targetPlayer.bodyLength = (targetPlayer.bodyLength - segmentsDestroyed).clamp(5, 1000);
+        print('💣 Jugador $targetId perdió $segmentsDestroyed segmentos (ahora: ${targetPlayer.bodyLength})');
+      }
+    });
+    
+    // Broadcast a todos los jugadores en la sala
+    broadcastToRoom(player.roomCode!, {
+      'type': 'bombExploded',
+      'playerId': playerId,
+      'affectedPlayers': affectedPlayers,
+    });
   }
   
   void broadcastPlayerUpdate(Player player) {

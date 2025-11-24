@@ -90,6 +90,35 @@ class PlayerHead extends PositionComponent
     
     // 6. Dibujar ojos
     _drawEyes(canvas, center, radius, angle);
+    
+    // ❄️ Efecto visual de congelación
+    if (game.isFrozen) {
+      // Overlay azul semitransparente
+      final frozenPaint = Paint()
+        ..color = const Color(0xFF00CED1).withOpacity(0.4)
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(center, radius, frozenPaint);
+      
+      // Borde de hielo
+      final iceBorderPaint = Paint()
+        ..color = const Color(0xFF87CEEB)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3.0;
+      canvas.drawCircle(center, radius, iceBorderPaint);
+      
+      // Cristales de hielo (decorativos)
+      final crystalPaint = Paint()
+        ..color = const Color(0xFFFFFFFF).withOpacity(0.6)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.0;
+      
+      for (int i = 0; i < 6; i++) {
+        final angle = (i * math.pi / 3);
+        final start = center + Offset(math.cos(angle) * radius * 0.3, math.sin(angle) * radius * 0.3);
+        final end = center + Offset(math.cos(angle) * radius * 0.8, math.sin(angle) * radius * 0.8);
+        canvas.drawLine(start, end, crystalPaint);
+      }
+    }
   }
   
   void _drawEyes(Canvas canvas, Offset center, double radius, double angle) {
@@ -201,9 +230,13 @@ class PlayerHead extends PositionComponent
   void update(double dt) {
     super.update(dt);
     size = Vector2.all(game.currentRadius * 2);
-    // Usar directamente la dirección del juego (ya está normalizada)
-    // ⚡ Aplicar multiplicador de velocidad si está activo Speed Boost
-    position += game.targetDirection * _speed * game.speedMultiplier * dt;
+    
+    // ❄️ No moverse si está congelado
+    if (!game.isFrozen) {
+      // Usar directamente la dirección del juego (ya está normalizada)
+      // ⚡ Aplicar multiplicador de velocidad si está activo Speed Boost
+      position += game.targetDirection * _speed * game.speedMultiplier * dt;
+    }
 
     // Lógica de límites del mapa (clamping)
     double currentRadius = (game as SlitherGame).currentRadius;

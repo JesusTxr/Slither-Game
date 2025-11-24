@@ -2,12 +2,15 @@ import 'dart:ui';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart' hide Image;
 import '../game.dart';
+import 'power_up.dart';
+import '../config/power_up_types.dart';
 
 class Minimap extends PositionComponent with HasGameRef<SlitherGame> {
   late RectangleComponent background;
   late RectangleComponent worldBorder;
   late CircleComponent playerDot;
   final Map<String, CircleComponent> remoteDots = {};
+  final Map<String, CircleComponent> powerUpDots = {}; // 🎁 Dots para power-ups
   
   final double minimapWidth = 150;
   final double minimapHeight = 150;
@@ -68,6 +71,9 @@ class Minimap extends PositionComponent with HasGameRef<SlitherGame> {
       
       // Actualizar posiciones de jugadores remotos
       _updateRemotePlayers();
+      
+      // 🎁 Actualizar posiciones de power-ups
+      _updatePowerUps();
     }
   }
   
@@ -103,6 +109,55 @@ class Minimap extends PositionComponent with HasGameRef<SlitherGame> {
       final minimapY = (remotePlayer.position.y / worldSize.y) * minimapHeight;
       
       remoteDots[playerId]!.position = Vector2(minimapX, minimapY);
+    }
+  }
+  
+  void _updatePowerUps() {
+    // Obtener todos los power-ups del mundo
+    final allPowerUps = gameRef.world.children.whereType<PowerUp>().toList();
+    final currentPowerUpIds = allPowerUps.map((p) => p.id).toSet();
+    final dotIds = powerUpDots.keys.toSet();
+    
+    // Limpiar dots de power-ups que ya no existen
+    for (var id in dotIds.difference(currentPowerUpIds)) {
+      powerUpDots[id]?.removeFromParent();
+      powerUpDots.remove(id);
+    }
+    
+    // Agregar o actualizar dots de power-ups
+    for (var powerUp in allPowerUps) {
+      if (!powerUpDots.containsKey(powerUp.id)) {
+        // Crear nuevo dot para power-up con su color específico
+        final config = PowerUpConfig.getConfig(powerUp.type);
+        final dot = CircleComponent(
+          radius: 5, // Un poco más grande para destacar
+          paint: Paint()
+            ..color = config.color
+            ..style = PaintingStyle.fill,
+          anchor: Anchor.center,
+        );
+        
+        // Agregar un borde blanco para mejor visibilidad
+        final border = CircleComponent(
+          radius: 5,
+          paint: Paint()
+            ..color = Colors.white
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.5,
+          anchor: Anchor.center,
+        );
+        dot.add(border);
+        
+        powerUpDots[powerUp.id] = dot;
+        add(dot);
+      }
+      
+      // Actualizar posición
+      final worldSize = gameRef.worldSize;
+      final minimapX = (powerUp.position.x / worldSize.x) * minimapWidth;
+      final minimapY = (powerUp.position.y / worldSize.y) * minimapHeight;
+      
+      powerUpDots[powerUp.id]!.position = Vector2(minimapX, minimapY);
     }
   }
   

@@ -66,7 +66,7 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
   double _networkUpdateTimer = 0;
   final double _networkUpdateInterval = 0.016; // 60 FPS - Ultra fluido
   Vector2? _lastSentPosition; // Para detectar cambios significativos
-  double _minDistanceToSend = 3.0; // Enviar solo si se movió más de 3px
+  double _minDistanceToSend = 1.0; // Enviar con cambio muy pequeño (más actualizaciones)
   bool isMultiplayer = false;
   String? roomCode;  // 🔑 Código de sala para multijugador
   bool waitingForPlayers = false;  // 🔑 Esperando a que todos los jugadores se conecten

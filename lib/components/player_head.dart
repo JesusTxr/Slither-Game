@@ -234,8 +234,8 @@ class PlayerHead extends PositionComponent
     
     // ❄️ No moverse si está congelado
     if (!game.isFrozen) {
-      // Usar directamente la dirección del juego (ya está normalizada)
-      // ⚡ Aplicar multiplicador de velocidad si está activo Speed Boost
+      // 🎮 CLIENT-SIDE PREDICTION: Movimiento instantáneo SIN esperar al servidor
+      // Esto elimina completamente el lag de entrada
       position += game.targetDirection * _speed * game.speedMultiplier * dt;
     }
 

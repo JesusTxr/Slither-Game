@@ -175,12 +175,13 @@ class NetworkService {
     }));
   }
   
-  void sendRoomCode(String roomCode) {
+  void sendRoomCode(String roomCode, {String? skinId}) {
     if (!isConnected) return;
     
     _channel!.sink.add(jsonEncode({
       'type': 'joinRoom',
       'roomCode': roomCode,
+      'skinId': skinId ?? 'classic', // 🎨 Enviar skin seleccionada
     }));
   }
   

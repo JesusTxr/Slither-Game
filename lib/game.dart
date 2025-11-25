@@ -185,9 +185,10 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
       // Pequeña espera para que el servidor procese el nickname
       await Future.delayed(Duration(milliseconds: 100));
       
-      // Enviar código de sala para unirse
+      // Enviar código de sala para unirse (con skin seleccionada)
       print('📤 Enviando código de sala: $roomCode');
-      networkService!.sendRoomCode(roomCode!);
+      print('🎨 Enviando skin seleccionada: ${GameConfig.selectedSkinId}');
+      networkService!.sendRoomCode(roomCode!, skinId: GameConfig.selectedSkinId);
       
       // ⏳ Esperar hasta 60 segundos para que el servidor responda
       // (Render puede tardar ~30-60 segundos en "despertar")
@@ -368,15 +369,20 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
       print('✅ Jugador remoto $playerId actualizado');
     } else {
       // Si no existe, crear un nuevo RemotePlayer (fue eliminado al morir)
+      // 🎨 Obtener skin del jugador remoto
+      final skinId = data['playerSkin'] ?? 'classic';
+      final playerSkin = SnakeSkins.getById(skinId);
+      
       remotePlayer = RemotePlayer(
         playerId: playerId,
         nickname: nickname,
         position: Vector2(x, y),
+        skin: playerSkin, // 🎨 Usar skin correcta
       );
       remotePlayer.score = score;
       world.add(remotePlayer);
       remotePlayers[playerId] = remotePlayer;
-      print('✅ Jugador remoto $playerId recreado después de respawn');
+      print('✅ Jugador remoto $playerId recreado después de respawn con skin: $skinId');
     }
   }
   
@@ -410,12 +416,18 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
   void _addRemotePlayer(Map<String, dynamic> playerData) {
     final playerId = playerData['id'];
     if (!remotePlayers.containsKey(playerId)) {
+      // 🎨 Obtener skin del jugador remoto
+      final skinId = playerData['playerSkin'] ?? 'classic';
+      final playerSkin = SnakeSkins.getById(skinId);
+      print('🎨 Jugador remoto $playerId con skin: $skinId');
+      
       final player = RemotePlayer(
         playerId: playerId,
         nickname: playerData['nickname'] ?? 'Player',
         position: Vector2(playerData['x'], playerData['y']),
         bodyLength: playerData['bodyLength'] ?? 5,
         score: playerData['score'] ?? 0,
+        skin: playerSkin, // 🎨 Usar skin correcta
       );
       remotePlayers[playerId] = player;
       world.add(player);

@@ -212,11 +212,11 @@ class SlitherServer {
       
       switch (data['type']) {
         case 'joinRoom':
-          handleJoinRoom(playerId, data['roomCode']);
+          handleJoinRoom(playerId, data['roomCode'], data['skinId']);
           break;
           
         case 'createRoom':
-          handleCreateRoom(playerId, data['roomCode']);
+          handleCreateRoom(playerId, data['roomCode'], data['skinId']);
           break;
           
         case 'playerReady':
@@ -284,9 +284,15 @@ class SlitherServer {
     }
   }
   
-  void handleJoinRoom(String playerId, String roomCode) {
+  void handleJoinRoom(String playerId, String roomCode, String? skinId) {
     var player = players[playerId];
     if (player == null) return;
+    
+    // 🎨 Actualizar skin del jugador
+    if (skinId != null && skinId.isNotEmpty) {
+      player.playerSkin = skinId;
+      print('🎨 Jugador $playerId seleccionó skin: $skinId');
+    }
     
     // Buscar o crear la sala
     var room = rooms[roomCode];
@@ -319,9 +325,9 @@ class SlitherServer {
     }, exclude: playerId);
   }
   
-  void handleCreateRoom(String playerId, String roomCode) {
+  void handleCreateRoom(String playerId, String roomCode, String? skinId) {
     // Igual que join pero marca como host
-    handleJoinRoom(playerId, roomCode);
+    handleJoinRoom(playerId, roomCode, skinId);
   }
   
   void handlePlayerReady(String playerId, bool isReady) {

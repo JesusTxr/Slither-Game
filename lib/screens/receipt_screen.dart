@@ -31,28 +31,24 @@ class ReceiptScreen extends StatelessWidget {
           ),
         ),
         child: SafeArea(
-          child: Column(
-            children: [
-              // Header con checkmark animado
-              _buildHeader(context),
-              
-              // Comprobante
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.all(20),
-                  child: Column(
-                    children: [
-                      // Ticket de comprobante
-                      _buildReceipt(dateFormat.format(createdAt)),
-                      SizedBox(height: 30),
-                      
-                      // Botones de acción
-                      _buildActionButtons(context),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+          child: SingleChildScrollView(
+            physics: BouncingScrollPhysics(),
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+            child: Column(
+              children: [
+                // Header con checkmark animado
+                _buildHeader(context),
+                SizedBox(height: 20),
+                
+                // Ticket de comprobante
+                _buildReceipt(dateFormat.format(createdAt)),
+                SizedBox(height: 30),
+                
+                // Botones de acción
+                _buildActionButtons(context),
+                SizedBox(height: 20),
+              ],
+            ),
           ),
         ),
       ),
@@ -60,52 +56,49 @@ class ReceiptScreen extends StatelessWidget {
   }
   
   Widget _buildHeader(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(30),
-      child: Column(
-        children: [
-          // Checkmark animado
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.greenAccent,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.greenAccent.withOpacity(0.5),
-                  blurRadius: 20,
-                  spreadRadius: 5,
-                ),
-              ],
-            ),
-            child: Icon(
-              Icons.check_rounded,
-              size: 50,
-              color: Colors.white,
-            ),
+    return Column(
+      children: [
+        // Checkmark animado
+        Container(
+          width: 80,
+          height: 80,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.greenAccent,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.greenAccent.withOpacity(0.5),
+                blurRadius: 20,
+                spreadRadius: 5,
+              ),
+            ],
           ),
-          SizedBox(height: 20),
-          
-          // Texto de éxito
-          Text(
-            '¡Pago Exitoso!',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-            ),
+          child: Icon(
+            Icons.check_rounded,
+            size: 50,
+            color: Colors.white,
           ),
-          SizedBox(height: 8),
-          Text(
-            'Tu skin ha sido desbloqueada',
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 16,
-            ),
+        ),
+        SizedBox(height: 20),
+        
+        // Texto de éxito
+        Text(
+          '¡Pago Exitoso!',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
           ),
-        ],
-      ),
+        ),
+        SizedBox(height: 8),
+        Text(
+          'Tu skin ha sido desbloqueada',
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: 16,
+          ),
+        ),
+      ],
     );
   }
   

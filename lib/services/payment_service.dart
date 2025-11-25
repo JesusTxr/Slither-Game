@@ -5,8 +5,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class PaymentService {
   final SupabaseClient _supabase = Supabase.instance.client;
   
-  /// Validar número de tarjeta usando algoritmo de Luhn
-  /// https://es.wikipedia.org/wiki/Algoritmo_de_Luhn
+  /// Validar número de tarjeta (SIMULACIÓN - acepta cualquier número)
+  /// En modo simulación, solo verifica formato básico
   bool validateCardNumber(String cardNumber) {
     // Eliminar espacios y guiones
     cardNumber = cardNumber.replaceAll(RegExp(r'[\s-]'), '');
@@ -21,25 +21,9 @@ class PaymentService {
       return false;
     }
     
-    // Algoritmo de Luhn
-    int sum = 0;
-    bool alternate = false;
-    
-    for (int i = cardNumber.length - 1; i >= 0; i--) {
-      int digit = int.parse(cardNumber[i]);
-      
-      if (alternate) {
-        digit *= 2;
-        if (digit > 9) {
-          digit -= 9;
-        }
-      }
-      
-      sum += digit;
-      alternate = !alternate;
-    }
-    
-    return sum % 10 == 0;
+    // ✅ MODO SIMULACIÓN: Acepta cualquier número válido
+    // (No aplica algoritmo de Luhn para que acepte 1111 1111 1111 1111, etc)
+    return true;
   }
   
   /// Detectar tipo de tarjeta
@@ -75,7 +59,7 @@ class PaymentService {
     return 'Otra';
   }
   
-  /// Validar fecha de expiración (MM/AA)
+  /// Validar fecha de expiración (SIMULACIÓN - acepta cualquier fecha futura)
   bool validateExpiryDate(String expiryDate) {
     // Formato esperado: MM/AA
     if (!RegExp(r'^\d{2}/\d{2}$').hasMatch(expiryDate)) {
@@ -95,25 +79,27 @@ class PaymentService {
       return false;
     }
     
-    // Validar que no esté expirada
+    // ✅ MODO SIMULACIÓN: Acepta cualquier fecha que no esté muy expirada
+    // (Permite incluso fechas del pasado reciente para facilitar pruebas)
     final now = DateTime.now();
-    final fullYear = 2000 + year; // Convertir AA a AAAA
-    final expiryDateTime = DateTime(fullYear, month, 1);
-    final currentMonthStart = DateTime(now.year, now.month, 1);
+    final fullYear = 2000 + year;
     
-    return expiryDateTime.isAfter(currentMonthStart) || 
-           expiryDateTime.isAtSameMomentAs(currentMonthStart);
+    // Solo rechaza si está expirada hace más de 5 años
+    if (fullYear < now.year - 5) {
+      return false;
+    }
+    
+    return true;
   }
   
-  /// Validar CVV
+  /// Validar CVV (SIMULACIÓN - acepta 3 o 4 dígitos)
   bool validateCVV(String cvv, String cardType) {
-    // American Express usa 4 dígitos, otros usan 3
-    final expectedLength = cardType == 'American Express' ? 4 : 3;
-    
-    return RegExp(r'^\d{$expectedLength}$'.replaceAll('\$expectedLength', expectedLength.toString())).hasMatch(cvv);
+    // ✅ MODO SIMULACIÓN: Acepta cualquier CVV de 3 o 4 dígitos
+    return RegExp(r'^\d{3,4}$').hasMatch(cvv);
   }
   
-  /// 💰 Procesar pago (simulado)
+  /// 💰 Procesar pago (SIMULACIÓN COMPLETA)
+  /// Acepta cualquier número de tarjeta para pruebas
   /// Registra la compra en Supabase
   Future<Map<String, dynamic>> processPayment({
     required String skinId,

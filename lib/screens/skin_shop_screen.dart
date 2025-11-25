@@ -102,8 +102,9 @@ class _SkinShopScreenState extends State<SkinShopScreen> with SingleTickerProvid
       context: context,
       builder: (context) => Dialog(
         backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 40), // Más espacio
         child: Container(
-          padding: EdgeInsets.all(24),
+          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.75),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
@@ -113,158 +114,163 @@ class _SkinShopScreenState extends State<SkinShopScreen> with SingleTickerProvid
                 Color(0xFF16213e),
               ],
             ),
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: Color(skin.rarityColor).withOpacity(0.5),
               width: 2,
             ),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Icono de la skin con animación
-              Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      skin.skin.secondaryColor,
-                      skin.skin.primaryColor,
+          child: SingleChildScrollView( // ⚡ SCROLLABLE para evitar overflow
+            padding: EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icono de la skin (más pequeño)
+                Container(
+                  width: 80, // 100 → 80
+                  height: 80,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        skin.skin.secondaryColor,
+                        skin.skin.primaryColor,
+                      ],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: skin.skin.primaryColor.withOpacity(0.5),
+                        blurRadius: 20,
+                        spreadRadius: 3,
+                      ),
                     ],
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: skin.skin.primaryColor.withOpacity(0.6),
-                      blurRadius: 25,
-                      spreadRadius: 5,
+                  child: Center(
+                    child: Text(
+                      skin.emoji,
+                      style: TextStyle(fontSize: 40), // 50 → 40
                     ),
-                  ],
-                ),
-                child: Center(
-                  child: Text(
-                    skin.emoji,
-                    style: TextStyle(fontSize: 50),
                   ),
                 ),
-              ),
-              SizedBox(height: 20),
-              
-              // Nombre y rareza
-              Text(
-                skin.name,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              SizedBox(height: 8),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Color(skin.rarityColor).withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Color(skin.rarityColor),
-                    width: 1.5,
-                  ),
-                ),
-                child: Text(
-                  skin.rarity.toUpperCase(),
+                SizedBox(height: 16), // 20 → 16
+                
+                // Nombre
+                Text(
+                  skin.name,
                   style: TextStyle(
-                    color: Color(skin.rarityColor),
-                    fontSize: 12,
+                    color: Colors.white,
+                    fontSize: 22, // 24 → 22
                     fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
                   ),
                 ),
-              ),
-              SizedBox(height: 24),
-              
-              // Precio
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.greenAccent.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.attach_money, color: Colors.greenAccent, size: 32),
-                    Text(
-                      '${skin.price.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        color: Colors.greenAccent,
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(height: 24),
-              
-              // Botones
-              Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: BorderSide(color: Colors.white30),
-                        ),
-                      ),
-                      child: Text(
-                        'Cancelar',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                SizedBox(height: 6), // 8 → 6
+                
+                // Badge de rareza
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Color(skin.rarityColor).withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: Color(skin.rarityColor),
+                      width: 1.5,
                     ),
                   ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    flex: 2,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => PaymentScreen(skin: skin),
-                          ),
-                        ).then((_) => _loadData());
-                      },
-                      icon: Icon(Icons.shopping_cart, size: 20),
-                      label: Text(
-                        'Comprar',
+                  child: Text(
+                    skin.rarity.toUpperCase(),
+                    style: TextStyle(
+                      color: Color(skin.rarityColor),
+                      fontSize: 11, // 12 → 11
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.1,
+                    ),
+                  ),
+                ),
+                SizedBox(height: 18), // 24 → 18
+                
+                // Precio
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.greenAccent.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.attach_money, color: Colors.greenAccent, size: 28), // 32 → 28
+                      Text(
+                        '${skin.price.toStringAsFixed(2)}',
                         style: TextStyle(
-                          fontSize: 16,
+                          color: Colors.greenAccent,
+                          fontSize: 28, // 32 → 28
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.greenAccent,
-                        foregroundColor: Colors.black87,
-                        padding: EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 20), // 24 → 20
+                
+                // Botones
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.symmetric(vertical: 14), // 16 → 14
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(color: Colors.white30),
+                          ),
                         ),
-                        elevation: 8,
+                        child: Text(
+                          'Cancelar',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 15, // 16 → 15
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                    SizedBox(width: 10), // 12 → 10
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => PaymentScreen(skin: skin),
+                            ),
+                          ).then((_) => _loadData());
+                        },
+                        icon: Icon(Icons.shopping_cart, size: 18), // 20 → 18
+                        label: Text(
+                          'Comprar',
+                          style: TextStyle(
+                            fontSize: 15, // 16 → 15
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.greenAccent,
+                          foregroundColor: Colors.black87,
+                          padding: EdgeInsets.symmetric(vertical: 14), // 16 → 14
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 6,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -339,15 +345,15 @@ class _SkinShopScreenState extends State<SkinShopScreen> with SingleTickerProvid
               // Tabs de filtros
               _buildFilterTabs(),
               
-              // Grid de skins (más compacto: 3 columnas)
+              // Grid de skins (MÁS compacto: 3 columnas)
               Expanded(
                 child: GridView.builder(
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 3, // 3 columnas
-                    childAspectRatio: 0.72, // Más compacto
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
+                    childAspectRatio: 0.68, // MÁS compacto (0.72 → 0.68)
+                    crossAxisSpacing: 6,
+                    mainAxisSpacing: 6,
                   ),
                   itemCount: _getFilteredSkins().length,
                   itemBuilder: (context, index) {
@@ -371,7 +377,7 @@ class _SkinShopScreenState extends State<SkinShopScreen> with SingleTickerProvid
     final ownedSkins = _purchasedSkins.length + 1; // +1 por la gratis
     
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8), // Menos padding
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -450,8 +456,8 @@ class _SkinShopScreenState extends State<SkinShopScreen> with SingleTickerProvid
 
   Widget _buildFilterTabs() {
     return Container(
-      height: 48,
-      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      height: 42, // 48 → 42 (más compacto)
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5), // Menos padding
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: [
@@ -554,17 +560,17 @@ class _SkinShopScreenState extends State<SkinShopScreen> with SingleTickerProvid
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Emoji
+                // Emoji (más pequeño)
                 Text(
                   skin.emoji,
-                  style: TextStyle(fontSize: 28),
+                  style: TextStyle(fontSize: 24), // 28 → 24
                 ),
-                SizedBox(height: 4),
+                SizedBox(height: 3), // 4 → 3
                 
-                // Preview del color
+                // Preview del color (más pequeño)
                 Container(
-                  width: 42,
-                  height: 42,
+                  width: 36, // 42 → 36
+                  height: 36,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
@@ -575,23 +581,23 @@ class _SkinShopScreenState extends State<SkinShopScreen> with SingleTickerProvid
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: skin.skin.primaryColor.withOpacity(0.5),
-                        blurRadius: 8,
-                        spreadRadius: 1,
+                        color: skin.skin.primaryColor.withOpacity(0.4),
+                        blurRadius: 6, // 8 → 6
+                        spreadRadius: 0.5, // 1 → 0.5
                       ),
                     ],
                   ),
                 ),
-                SizedBox(height: 6),
+                SizedBox(height: 5), // 6 → 5
                 
                 // Nombre
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 3), // 4 → 3
                   child: Text(
                     skin.name,
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 12,
+                      fontSize: 11, // 12 → 11
                       fontWeight: FontWeight.bold,
                     ),
                     textAlign: TextAlign.center,
@@ -599,7 +605,7 @@ class _SkinShopScreenState extends State<SkinShopScreen> with SingleTickerProvid
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                SizedBox(height: 4),
+                SizedBox(height: 3), // 4 → 3
                 
                 // Estado/Precio
                 if (isSelected)
@@ -667,27 +673,27 @@ class _SkinShopScreenState extends State<SkinShopScreen> with SingleTickerProvid
               ],
             ),
             
-            // Badge de rareza (esquina superior derecha)
+            // Badge de rareza (esquina superior derecha - más pequeño)
             if (!skin.isFree)
               Positioned(
-                top: 6,
-                right: 6,
+                top: 4, // 6 → 4
+                right: 4, // 6 → 4
                 child: Container(
-                  padding: EdgeInsets.all(4),
+                  padding: EdgeInsets.all(3), // 4 → 3
                   decoration: BoxDecoration(
                     color: Color(skin.rarityColor).withOpacity(0.9),
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Color(skin.rarityColor).withOpacity(0.5),
-                        blurRadius: 6,
-                        spreadRadius: 1,
+                        color: Color(skin.rarityColor).withOpacity(0.4),
+                        blurRadius: 4, // 6 → 4
+                        spreadRadius: 0.5, // 1 → 0.5
                       ),
                     ],
                   ),
                   child: Icon(
                     _getRarityIcon(skin.rarity),
-                    size: 10,
+                    size: 8, // 10 → 8
                     color: Colors.white,
                   ),
                 ),

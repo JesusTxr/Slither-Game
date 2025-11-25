@@ -100,35 +100,48 @@ class _SkinShopScreenState extends State<SkinShopScreen> with SingleTickerProvid
   void _showPurchaseDialog(ShopSkin skin) {
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 40), // Más espacio
-        child: Container(
-          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.75),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF1a1a2e),
-                Color(0xFF16213e),
-              ],
+      builder: (context) => LayoutBuilder(
+        builder: (context, constraints) {
+          // Obtener tamaño de pantalla disponible
+          final screenHeight = constraints.maxHeight;
+          final screenWidth = constraints.maxWidth;
+          
+          return Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: EdgeInsets.symmetric(
+              horizontal: screenWidth * 0.05, // 5% del ancho
+              vertical: screenHeight * 0.05, // 5% del alto
             ),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: Color(skin.rarityColor).withOpacity(0.5),
-              width: 2,
-            ),
-          ),
-          child: SingleChildScrollView( // ⚡ SCROLLABLE para evitar overflow
-            padding: EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Icono de la skin (más pequeño)
+            child: Container(
+              constraints: BoxConstraints(
+                maxHeight: screenHeight * 0.8, // Máximo 80% de la pantalla
+                maxWidth: screenWidth * 0.9, // Máximo 90% del ancho
+              ),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFF1a1a2e),
+                    Color(0xFF16213e),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: Color(skin.rarityColor).withOpacity(0.5),
+                  width: 2,
+                ),
+              ),
+              child: SingleChildScrollView( // ⚡ SCROLLABLE para evitar overflow
+                physics: BouncingScrollPhysics(),
+                padding: EdgeInsets.all(screenHeight * 0.025), // Padding responsivo
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                // Icono de la skin (responsivo)
                 Container(
-                  width: 80, // 100 → 80
-                  height: 80,
+                  width: screenHeight * 0.1, // 10% del alto de pantalla
+                  height: screenHeight * 0.1,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
@@ -148,26 +161,30 @@ class _SkinShopScreenState extends State<SkinShopScreen> with SingleTickerProvid
                   child: Center(
                     child: Text(
                       skin.emoji,
-                      style: TextStyle(fontSize: 40), // 50 → 40
+                      style: TextStyle(fontSize: screenHeight * 0.05), // 5% del alto
                     ),
                   ),
                 ),
-                SizedBox(height: 16), // 20 → 16
+                SizedBox(height: screenHeight * 0.02), // 2% del alto
                 
                 // Nombre
                 Text(
                   skin.name,
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 22, // 24 → 22
+                    fontSize: screenHeight * 0.028, // Responsivo (2.8% del alto)
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                SizedBox(height: 6), // 8 → 6
+                SizedBox(height: screenHeight * 0.01), // 1% del alto
                 
                 // Badge de rareza
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: screenWidth * 0.025, // 2.5% del ancho
+                    vertical: screenHeight * 0.005, // 0.5% del alto
+                  ),
                   decoration: BoxDecoration(
                     color: Color(skin.rarityColor).withOpacity(0.2),
                     borderRadius: BorderRadius.circular(10),
@@ -180,17 +197,20 @@ class _SkinShopScreenState extends State<SkinShopScreen> with SingleTickerProvid
                     skin.rarity.toUpperCase(),
                     style: TextStyle(
                       color: Color(skin.rarityColor),
-                      fontSize: 11, // 12 → 11
+                      fontSize: screenHeight * 0.014, // Responsivo (1.4% del alto)
                       fontWeight: FontWeight.bold,
                       letterSpacing: 1.1,
                     ),
                   ),
                 ),
-                SizedBox(height: 18), // 24 → 18
+                SizedBox(height: screenHeight * 0.025), // 2.5% del alto
                 
                 // Precio
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: screenWidth * 0.04, // 4% del ancho
+                    vertical: screenHeight * 0.012, // 1.2% del alto
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.greenAccent.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(14),
@@ -198,19 +218,23 @@ class _SkinShopScreenState extends State<SkinShopScreen> with SingleTickerProvid
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.attach_money, color: Colors.greenAccent, size: 28), // 32 → 28
+                      Icon(
+                        Icons.attach_money, 
+                        color: Colors.greenAccent, 
+                        size: screenHeight * 0.035, // 3.5% del alto
+                      ),
                       Text(
                         '${skin.price.toStringAsFixed(2)}',
                         style: TextStyle(
                           color: Colors.greenAccent,
-                          fontSize: 28, // 32 → 28
+                          fontSize: screenHeight * 0.035, // 3.5% del alto
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ],
                   ),
                 ),
-                SizedBox(height: 20), // 24 → 20
+                SizedBox(height: screenHeight * 0.025), // 2.5% del alto
                 
                 // Botones
                 Row(
@@ -219,7 +243,9 @@ class _SkinShopScreenState extends State<SkinShopScreen> with SingleTickerProvid
                       child: TextButton(
                         onPressed: () => Navigator.pop(context),
                         style: TextButton.styleFrom(
-                          padding: EdgeInsets.symmetric(vertical: 14), // 16 → 14
+                          padding: EdgeInsets.symmetric(
+                            vertical: screenHeight * 0.018, // 1.8% del alto
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                             side: BorderSide(color: Colors.white30),
@@ -229,13 +255,13 @@ class _SkinShopScreenState extends State<SkinShopScreen> with SingleTickerProvid
                           'Cancelar',
                           style: TextStyle(
                             color: Colors.white70,
-                            fontSize: 15, // 16 → 15
+                            fontSize: screenHeight * 0.019, // 1.9% del alto
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
                     ),
-                    SizedBox(width: 10), // 12 → 10
+                    SizedBox(width: screenWidth * 0.025), // 2.5% del ancho
                     Expanded(
                       flex: 2,
                       child: ElevatedButton.icon(
@@ -248,18 +274,23 @@ class _SkinShopScreenState extends State<SkinShopScreen> with SingleTickerProvid
                             ),
                           ).then((_) => _loadData());
                         },
-                        icon: Icon(Icons.shopping_cart, size: 18), // 20 → 18
+                        icon: Icon(
+                          Icons.shopping_cart, 
+                          size: screenHeight * 0.022, // 2.2% del alto
+                        ),
                         label: Text(
                           'Comprar',
                           style: TextStyle(
-                            fontSize: 15, // 16 → 15
+                            fontSize: screenHeight * 0.019, // 1.9% del alto
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.greenAccent,
                           foregroundColor: Colors.black87,
-                          padding: EdgeInsets.symmetric(vertical: 14), // 16 → 14
+                          padding: EdgeInsets.symmetric(
+                            vertical: screenHeight * 0.018, // 1.8% del alto
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -272,6 +303,9 @@ class _SkinShopScreenState extends State<SkinShopScreen> with SingleTickerProvid
               ],
             ),
           ),
+        ),
+            );
+          },
         ),
       ),
     );

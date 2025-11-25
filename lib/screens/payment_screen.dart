@@ -105,6 +105,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
   
   @override
   Widget build(BuildContext context) {
+    // Obtener dimensiones de pantalla
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -122,30 +126,34 @@ class _PaymentScreenState extends State<PaymentScreen> {
           child: Column(
             children: [
               // Header
-              _buildHeader(),
+              _buildHeader(screenHeight, screenWidth),
               
               // Contenido con scroll
               Expanded(
                 child: SingleChildScrollView(
-                  padding: EdgeInsets.all(20),
+                  physics: BouncingScrollPhysics(), // Scroll más suave
+                  padding: EdgeInsets.symmetric(
+                    horizontal: screenWidth * 0.05, // 5% del ancho
+                    vertical: screenHeight * 0.02, // 2% del alto
+                  ),
                   child: Form(
                     key: _formKey,
                     child: Column(
                       children: [
                         // Información del producto
-                        _buildProductInfo(),
-                        SizedBox(height: 30),
+                        _buildProductInfo(screenHeight, screenWidth),
+                        SizedBox(height: screenHeight * 0.035), // 3.5% del alto
                         
                         // Formulario de tarjeta
-                        _buildCardForm(),
-                        SizedBox(height: 30),
+                        _buildCardForm(screenHeight, screenWidth),
+                        SizedBox(height: screenHeight * 0.035), // 3.5% del alto
                         
                         // Botón de pago
-                        _buildPayButton(),
-                        SizedBox(height: 20),
+                        _buildPayButton(screenHeight, screenWidth),
+                        SizedBox(height: screenHeight * 0.025), // 2.5% del alto
                         
                         // Nota de seguridad
-                        _buildSecurityNote(),
+                        _buildSecurityNote(screenHeight),
                       ],
                     ),
                   ),
@@ -158,20 +166,24 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
   
-  Widget _buildHeader() {
+  Widget _buildHeader(double screenHeight, double screenWidth) {
     return Padding(
-      padding: const EdgeInsets.all(20.0),
+      padding: EdgeInsets.all(screenHeight * 0.025), // 2.5% del alto
       child: Row(
         children: [
           IconButton(
-            icon: Icon(Icons.arrow_back, color: Colors.white, size: 28),
+            icon: Icon(
+              Icons.arrow_back, 
+              color: Colors.white, 
+              size: screenHeight * 0.035, // 3.5% del alto
+            ),
             onPressed: () => Navigator.pop(context),
           ),
-          SizedBox(width: 10),
+          SizedBox(width: screenWidth * 0.025), // 2.5% del ancho
           Text(
             '💳 Pago Seguro',
             style: TextStyle(
-              fontSize: 24,
+              fontSize: screenHeight * 0.03, // 3% del alto
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
@@ -181,9 +193,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
   
-  Widget _buildProductInfo() {
+  Widget _buildProductInfo(double screenHeight, double screenWidth) {
     return Container(
-      padding: EdgeInsets.all(20),
+      padding: EdgeInsets.all(screenHeight * 0.025), // 2.5% del alto
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.1),
         borderRadius: BorderRadius.circular(16),
@@ -193,8 +205,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
         children: [
           // Preview de la skin
           Container(
-            width: 60,
-            height: 60,
+            width: screenHeight * 0.075, // 7.5% del alto
+            height: screenHeight * 0.075,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: RadialGradient(
@@ -212,7 +224,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               ],
             ),
           ),
-          SizedBox(width: 15),
+          SizedBox(width: screenWidth * 0.04), // 4% del ancho
           
           // Información
           Expanded(
@@ -223,16 +235,16 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   '${widget.skin.emoji} ${widget.skin.name}',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 18,
+                    fontSize: screenHeight * 0.022, // 2.2% del alto
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                SizedBox(height: 4),
+                SizedBox(height: screenHeight * 0.005), // 0.5% del alto
                 Text(
                   'Skin ${widget.skin.rarity}',
                   style: TextStyle(
                     color: Color(widget.skin.rarityColor),
-                    fontSize: 14,
+                    fontSize: screenHeight * 0.017, // 1.7% del alto
                   ),
                 ),
               ],
@@ -244,7 +256,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             '\$${widget.skin.price.toStringAsFixed(2)}',
             style: TextStyle(
               color: Colors.greenAccent,
-              fontSize: 24,
+              fontSize: screenHeight * 0.03, // 3% del alto
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -253,16 +265,18 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
   
-  Widget _buildCardForm() {
+  Widget _buildCardForm(double screenHeight, double screenWidth) {
+    final fontSize = screenHeight * 0.02; // 2% del alto
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Número de tarjeta
-        _buildLabel('Número de Tarjeta'),
+        _buildLabel('Número de Tarjeta', screenHeight),
         TextFormField(
           controller: _cardNumberController,
           keyboardType: TextInputType.number,
-          style: TextStyle(color: Colors.white, fontSize: 16),
+          style: TextStyle(color: Colors.white, fontSize: fontSize),
           decoration: _buildInputDecoration(
             hint: '1234 5678 9012 3456',
             icon: Icons.credit_card,
@@ -296,11 +310,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildLabel('Vencimiento'),
+                  _buildLabel('Vencimiento', screenHeight),
                   TextFormField(
                     controller: _expiryController,
                     keyboardType: TextInputType.number,
-                    style: TextStyle(color: Colors.white, fontSize: 16),
+                    style: TextStyle(color: Colors.white, fontSize: fontSize),
                     decoration: _buildInputDecoration(
                       hint: 'MM/AA',
                       icon: Icons.calendar_today,
@@ -328,11 +342,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildLabel('CVV'),
+                  _buildLabel('CVV', screenHeight),
                   TextFormField(
                     controller: _cvvController,
                     keyboardType: TextInputType.number,
-                    style: TextStyle(color: Colors.white, fontSize: 16),
+                    style: TextStyle(color: Colors.white, fontSize: fontSize),
                     obscureText: true,
                     decoration: _buildInputDecoration(
                       hint: '123',
@@ -357,10 +371,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
             ),
           ],
         ),
-        SizedBox(height: 20),
+        SizedBox(height: screenHeight * 0.025), // 2.5% del alto
         
         // Nombre del titular
-        _buildLabel('Nombre en la Tarjeta'),
+        _buildLabel('Nombre en la Tarjeta', screenHeight),
         TextFormField(
           controller: _nameController,
           keyboardType: TextInputType.name,
@@ -381,14 +395,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
   
-  Widget _buildLabel(String text) {
+  Widget _buildLabel(String text, double screenHeight) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.only(bottom: screenHeight * 0.01), // 1% del alto
       child: Text(
         text,
         style: TextStyle(
           color: Colors.white70,
-          fontSize: 14,
+          fontSize: screenHeight * 0.017, // 1.7% del alto
           fontWeight: FontWeight.w500,
         ),
       ),
@@ -433,10 +447,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
   
-  Widget _buildPayButton() {
+  Widget _buildPayButton(double screenHeight, double screenWidth) {
     return SizedBox(
       width: double.infinity,
-      height: 56,
+      height: screenHeight * 0.07, // 7% del alto
       child: ElevatedButton(
         onPressed: _isProcessing ? null : _processPayment,
         style: ElevatedButton.styleFrom(
@@ -452,8 +466,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   SizedBox(
-                    width: 20,
-                    height: 20,
+                    width: screenHeight * 0.025, // 2.5% del alto
+                    height: screenHeight * 0.025,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
@@ -482,23 +496,27 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
   
-  Widget _buildSecurityNote() {
+  Widget _buildSecurityNote(double screenHeight) {
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: EdgeInsets.all(screenHeight * 0.02), // 2% del alto
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.05),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
-          Icon(Icons.security, color: Colors.greenAccent, size: 20),
-          SizedBox(width: 10),
+          Icon(
+            Icons.security, 
+            color: Colors.greenAccent, 
+            size: screenHeight * 0.025, // 2.5% del alto
+          ),
+          SizedBox(width: screenHeight * 0.012), // 1.2% del alto
           Expanded(
             child: Text(
               'Pago 100% seguro. Tu información está protegida.',
               style: TextStyle(
                 color: Colors.white70,
-                fontSize: 12,
+                fontSize: screenHeight * 0.015, // 1.5% del alto
               ),
             ),
           ),

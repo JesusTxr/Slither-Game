@@ -17,6 +17,10 @@ class ReceiptScreen extends StatelessWidget {
     final createdAt = DateTime.parse(paymentData['created_at']);
     final dateFormat = DateFormat('dd/MM/yyyy HH:mm');
     
+    // Obtener dimensiones de pantalla
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -33,20 +37,23 @@ class ReceiptScreen extends StatelessWidget {
         child: SafeArea(
           child: SingleChildScrollView(
             physics: BouncingScrollPhysics(),
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+            padding: EdgeInsets.symmetric(
+              horizontal: screenWidth * 0.05, // 5% del ancho
+              vertical: screenHeight * 0.02, // 2% del alto
+            ),
             child: Column(
               children: [
                 // Header con checkmark animado
-                _buildHeader(context),
-                SizedBox(height: 20),
+                _buildHeader(context, screenHeight),
+                SizedBox(height: screenHeight * 0.025), // 2.5% del alto
                 
                 // Ticket de comprobante
-                _buildReceipt(dateFormat.format(createdAt)),
-                SizedBox(height: 30),
+                _buildReceipt(dateFormat.format(createdAt), screenHeight, screenWidth),
+                SizedBox(height: screenHeight * 0.035), // 3.5% del alto
                 
                 // Botones de acción
-                _buildActionButtons(context),
-                SizedBox(height: 20),
+                _buildActionButtons(context, screenHeight),
+                SizedBox(height: screenHeight * 0.025), // 2.5% del alto
               ],
             ),
           ),
@@ -55,13 +62,13 @@ class ReceiptScreen extends StatelessWidget {
     );
   }
   
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, double screenHeight) {
     return Column(
       children: [
         // Checkmark animado
         Container(
-          width: 80,
-          height: 80,
+          width: screenHeight * 0.1, // 10% del alto
+          height: screenHeight * 0.1,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: Colors.greenAccent,
@@ -75,34 +82,36 @@ class ReceiptScreen extends StatelessWidget {
           ),
           child: Icon(
             Icons.check_rounded,
-            size: 50,
+            size: screenHeight * 0.06, // 6% del alto
             color: Colors.white,
           ),
         ),
-        SizedBox(height: 20),
+        SizedBox(height: screenHeight * 0.025), // 2.5% del alto
         
         // Texto de éxito
         Text(
           '¡Pago Exitoso!',
+          textAlign: TextAlign.center,
           style: TextStyle(
             color: Colors.white,
-            fontSize: 28,
+            fontSize: screenHeight * 0.035, // 3.5% del alto
             fontWeight: FontWeight.bold,
           ),
         ),
-        SizedBox(height: 8),
+        SizedBox(height: screenHeight * 0.01), // 1% del alto
         Text(
           'Tu skin ha sido desbloqueada',
+          textAlign: TextAlign.center,
           style: TextStyle(
             color: Colors.white70,
-            fontSize: 16,
+            fontSize: screenHeight * 0.02, // 2% del alto
           ),
         ),
       ],
     );
   }
   
-  Widget _buildReceipt(String formattedDate) {
+  Widget _buildReceipt(String formattedDate, double screenHeight, double screenWidth) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -119,7 +128,7 @@ class ReceiptScreen extends StatelessWidget {
         children: [
           // Header del comprobante
           Container(
-            padding: EdgeInsets.all(20),
+            padding: EdgeInsets.all(screenHeight * 0.025), // 2.5% del alto
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
@@ -134,8 +143,12 @@ class ReceiptScreen extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Icon(Icons.receipt_long, color: Colors.white, size: 30),
-                SizedBox(width: 15),
+                Icon(
+                  Icons.receipt_long, 
+                  color: Colors.white, 
+                  size: screenHeight * 0.037, // 3.7% del alto
+                ),
+                SizedBox(width: screenWidth * 0.04), // 4% del ancho
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -144,17 +157,17 @@ class ReceiptScreen extends StatelessWidget {
                         'COMPROBANTE DE COMPRA',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 18,
+                          fontSize: screenHeight * 0.022, // 2.2% del alto
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.2,
                         ),
                       ),
-                      SizedBox(height: 4),
+                      SizedBox(height: screenHeight * 0.005), // 0.5% del alto
                       Text(
                         'Slither Game Store',
                         style: TextStyle(
                           color: Colors.white70,
-                          fontSize: 12,
+                          fontSize: screenHeight * 0.015, // 1.5% del alto
                         ),
                       ),
                     ],
@@ -169,34 +182,35 @@ class ReceiptScreen extends StatelessWidget {
           
           // Detalles del producto
           Container(
-            padding: EdgeInsets.all(20),
+            padding: EdgeInsets.all(screenHeight * 0.025), // 2.5% del alto
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Producto
-                _buildInfoRow('Producto', '${skin.emoji} ${skin.name}'),
-                SizedBox(height: 12),
-                _buildInfoRow('Categoría', 'Skin ${skin.rarity}'),
-                SizedBox(height: 12),
+                _buildInfoRow('Producto', '${skin.emoji} ${skin.name}', screenHeight),
+                SizedBox(height: screenHeight * 0.015), // 1.5% del alto
+                _buildInfoRow('Categoría', 'Skin ${skin.rarity}', screenHeight),
+                SizedBox(height: screenHeight * 0.015), // 1.5% del alto
                 Divider(color: Colors.grey.shade300),
-                SizedBox(height: 12),
+                SizedBox(height: screenHeight * 0.015), // 1.5% del alto
                 
                 // Información de pago
-                _buildInfoRow('Nº Comprobante', paymentData['numero_comprobante']),
-                SizedBox(height: 12),
-                _buildInfoRow('Fecha', formattedDate),
-                SizedBox(height: 12),
-                _buildInfoRow('Método de Pago', '${paymentData['tipo_tarjeta']} ****${paymentData['ultimos_4_digitos']}'),
-                SizedBox(height: 12),
-                _buildInfoRow('Titular', paymentData['nombre_titular']),
-                SizedBox(height: 12),
+                _buildInfoRow('Nº Comprobante', paymentData['numero_comprobante'], screenHeight),
+                SizedBox(height: screenHeight * 0.015), // 1.5% del alto
+                _buildInfoRow('Fecha', formattedDate, screenHeight),
+                SizedBox(height: screenHeight * 0.015), // 1.5% del alto
+                _buildInfoRow('Método de Pago', '${paymentData['tipo_tarjeta']} ****${paymentData['ultimos_4_digitos']}', screenHeight),
+                SizedBox(height: screenHeight * 0.015), // 1.5% del alto
+                _buildInfoRow('Titular', paymentData['nombre_titular'], screenHeight),
+                SizedBox(height: screenHeight * 0.015), // 1.5% del alto
                 _buildInfoRow('Estado', 
                   paymentData['estado'] == 'completado' ? '✅ Completado' : paymentData['estado'],
+                  screenHeight,
                   valueColor: Colors.green.shade700,
                 ),
-                SizedBox(height: 12),
+                SizedBox(height: screenHeight * 0.015), // 1.5% del alto
                 Divider(color: Colors.grey.shade300, thickness: 2),
-                SizedBox(height: 12),
+                SizedBox(height: screenHeight * 0.015), // 1.5% del alto
                 
                 // Total
                 Row(
@@ -206,7 +220,7 @@ class ReceiptScreen extends StatelessWidget {
                       'TOTAL',
                       style: TextStyle(
                         color: Colors.black87,
-                        fontSize: 20,
+                        fontSize: screenHeight * 0.025, // 2.5% del alto
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -214,7 +228,7 @@ class ReceiptScreen extends StatelessWidget {
                       '\$${paymentData['precio'].toStringAsFixed(2)}',
                       style: TextStyle(
                         color: Colors.green.shade700,
-                        fontSize: 24,
+                        fontSize: screenHeight * 0.03, // 3% del alto
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -229,20 +243,20 @@ class ReceiptScreen extends StatelessWidget {
           
           // Footer con preview de la skin
           Container(
-            padding: EdgeInsets.all(20),
+            padding: EdgeInsets.all(screenHeight * 0.025), // 2.5% del alto
             child: Column(
               children: [
                 Text(
                   'Tu nueva skin',
                   style: TextStyle(
                     color: Colors.grey.shade600,
-                    fontSize: 14,
+                    fontSize: screenHeight * 0.017, // 1.7% del alto
                   ),
                 ),
-                SizedBox(height: 15),
+                SizedBox(height: screenHeight * 0.018), // 1.8% del alto
                 Container(
-                  width: 80,
-                  height: 80,
+                  width: screenHeight * 0.1, // 10% del alto
+                  height: screenHeight * 0.1,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
@@ -268,24 +282,27 @@ class ReceiptScreen extends StatelessWidget {
     );
   }
   
-  Widget _buildInfoRow(String label, String value, {Color? valueColor}) {
+  Widget _buildInfoRow(String label, String value, double screenHeight, {Color? valueColor}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.grey.shade600,
-            fontSize: 14,
+        Flexible(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontSize: screenHeight * 0.017, // 1.7% del alto
+            ),
           ),
         ),
+        SizedBox(width: 8),
         Flexible(
           child: Text(
             value,
             textAlign: TextAlign.right,
             style: TextStyle(
               color: valueColor ?? Colors.black87,
-              fontSize: 14,
+              fontSize: screenHeight * 0.017, // 1.7% del alto
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -303,22 +320,28 @@ class ReceiptScreen extends StatelessWidget {
     );
   }
   
-  Widget _buildActionButtons(BuildContext context) {
+  Widget _buildActionButtons(BuildContext context, double screenHeight) {
     return Column(
       children: [
         // Botón: Usar skin ahora
         SizedBox(
           width: double.infinity,
-          height: 56,
+          height: screenHeight * 0.07, // 7% del alto
           child: ElevatedButton.icon(
             onPressed: () {
               // Volver a la tienda y seleccionar la skin
               Navigator.popUntil(context, (route) => route.isFirst);
             },
-            icon: Icon(Icons.check_circle_outline, size: 24),
+            icon: Icon(
+              Icons.check_circle_outline, 
+              size: screenHeight * 0.03, // 3% del alto
+            ),
             label: Text(
               'Usar Skin Ahora',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: screenHeight * 0.022, // 2.2% del alto
+                fontWeight: FontWeight.bold,
+              ),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.greenAccent,
@@ -330,20 +353,26 @@ class ReceiptScreen extends StatelessWidget {
             ),
           ),
         ),
-        SizedBox(height: 15),
+        SizedBox(height: screenHeight * 0.018), // 1.8% del alto
         
         // Botón: Volver a la tienda
         SizedBox(
           width: double.infinity,
-          height: 56,
+          height: screenHeight * 0.07, // 7% del alto
           child: OutlinedButton.icon(
             onPressed: () {
               Navigator.pop(context);
             },
-            icon: Icon(Icons.store, size: 24),
+            icon: Icon(
+              Icons.store, 
+              size: screenHeight * 0.03, // 3% del alto
+            ),
             label: Text(
               'Volver a la Tienda',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: screenHeight * 0.022, // 2.2% del alto
+                fontWeight: FontWeight.bold,
+              ),
             ),
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.white,

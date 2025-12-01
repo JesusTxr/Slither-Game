@@ -319,7 +319,7 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
       print('📥 [GAME] Actualizando posición de $playerId a ($x, $y)');
       print('📥 [GAME] Posición actual del jugador: ${player.position}');
       player.updatePosition(Vector2(x, y));
-      print('📥 [GAME] updatePosition llamado, nueva posición objetivo: ${player._targetPosition}');
+      print('📥 [GAME] updatePosition llamado exitosamente');
     } else {
       print('⚠️ [GAME] ERROR: Jugador $playerId no encontrado en remotePlayers');
       print('⚠️ [GAME] Jugadores remotos actuales: ${remotePlayers.keys.toList()}');

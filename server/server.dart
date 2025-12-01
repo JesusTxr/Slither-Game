@@ -43,6 +43,7 @@ class Player {
   String? nickname;
   String? roomCode;  // Sala a la que pertenece
   bool isReady;      // Si está listo en el lobby
+  String playerSkin; // 🎨 Skin del jugador
   
   Player({
     required this.id,
@@ -56,6 +57,7 @@ class Player {
     this.nickname,
     this.roomCode,
     this.isReady = false,
+    this.playerSkin = 'classic', // 🎨 Skin por defecto
   });
   
   Map<String, dynamic> toJson() => {
@@ -68,6 +70,7 @@ class Player {
     'score': score,
     'nickname': nickname ?? 'Player',
     'isReady': isReady,
+    'playerSkin': playerSkin, // 🎨 Incluir skin en JSON
   };
 }
 
@@ -786,8 +789,9 @@ class SlitherServer {
     affectedPlayers.forEach((targetId, segmentsToRemove) {
       var targetPlayer = players[targetId];
       if (targetPlayer != null) {
-        targetPlayer.bodyLength = (targetPlayer.bodyLength - segmentsToRemove).clamp(5, 1000);
-        print('📏 Jugador $targetId reducido de ${targetPlayer.bodyLength + segmentsToRemove} a ${targetPlayer.bodyLength}');
+        final segmentsToRemoveInt = (segmentsToRemove as num).toInt();
+        targetPlayer.bodyLength = (targetPlayer.bodyLength - segmentsToRemoveInt).clamp(5, 1000);
+        print('📏 Jugador $targetId reducido de ${targetPlayer.bodyLength + segmentsToRemoveInt} a ${targetPlayer.bodyLength}');
       }
     });
     
@@ -810,6 +814,8 @@ class SlitherServer {
     affectedPlayers.forEach((targetId, segmentsDestroyed) {
       var targetPlayer = players[targetId];
       if (targetPlayer != null) {
+        final segmentsDestroyedInt = (segmentsDestroyed as num).toInt();
+        targetPlayer.bodyLength = (targetPlayer.bodyLength - segmentsDestroyedInt).clamp(5, 1000);
         targetPlayer.bodyLength = (targetPlayer.bodyLength - segmentsDestroyed).clamp(5, 1000);
         print('💣 Jugador $targetId perdió $segmentsDestroyed segmentos (ahora: ${targetPlayer.bodyLength})');
       }

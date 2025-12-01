@@ -303,10 +303,9 @@ class _SkinShopScreenState extends State<SkinShopScreen> with SingleTickerProvid
               ],
             ),
           ),
-        ),
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
     );
   }

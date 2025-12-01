@@ -228,17 +228,20 @@ class SlitherServer {
           break;
           
         case 'move':
-          player.x = data['x'];
-          player.y = data['y'];
+          // ⚡ OPTIMIZACIÓN: Reducir precisión de coordenadas
+          player.x = (data['x'] as num).toDouble(); // Aceptar enteros del cliente
+          player.y = (data['y'] as num).toDouble();
           player.directionX = data['directionX'];
           player.directionY = data['directionY'];
+          
+          // ⚡ OPTIMIZACIÓN: Broadcast con coordenadas redondeadas
           broadcastToRoom(player.roomCode, {
             'type': 'playerMove',
             'playerId': playerId,
-            'x': player.x,
-            'y': player.y,
-            'directionX': player.directionX,
-            'directionY': player.directionY,
+            'x': player.x.round(), // Enviar como entero
+            'y': player.y.round(), // Enviar como entero
+            'directionX': (player.directionX * 100).round() / 100, // 2 decimales
+            'directionY': (player.directionY * 100).round() / 100, // 2 decimales
           }, exclude: playerId);
           break;
           

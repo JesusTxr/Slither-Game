@@ -49,36 +49,75 @@ class BodySegment extends PositionComponent
     final center = (size / 2).toOffset();
     final radius = size.x / 2;
     
-    // ⚡ OPTIMIZADO: Renderizado simplificado (menos operaciones)
+    // 🐍 SEGMENTO MEJORADO ESTILO SLITHER.IO
     
-    // 1. Sombra (solo 1 drawCircle)
+    // 1. Sombra más suave
     final shadowPaint = Paint()
-      ..color = const Color(0xFF000000).withOpacity(0.12);
-    canvas.drawCircle(center + const Offset(1.5, 1.5), radius, shadowPaint);
+      ..color = const Color(0xFF000000).withOpacity(0.15)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
+    canvas.drawCircle(center + const Offset(2, 2), radius, shadowPaint);
     
-    // 2. Cuerpo base
-    final basePaint = Paint()
-      ..color = skin.primaryColor
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(center, radius * 1.08, basePaint);
+    // 2. Capa base oscura (profundidad)
+    final darkBasePaint = Paint()
+      ..color = Color.lerp(skin.primaryColor, const Color(0xFF000000), 0.25)!;
+    canvas.drawCircle(center, radius * 1.05, darkBasePaint);
     
-    // 3. Gradiente simplificado (2 colores)
+    // 3. Gradiente principal más realista (3 colores)
     final gradientPaint = Paint()
       ..shader = Gradient.radial(
-        center - Offset(radius * 0.3, radius * 0.3),
-        radius * 1.2,
+        center - Offset(radius * 0.35, radius * 0.35),
+        radius * 1.3,
         [
+          Color.lerp(skin.secondaryColor, const Color(0xFFFFFFFF), 0.25)!,
           skin.secondaryColor,
           skin.primaryColor,
         ],
-        [0.0, 1.0],
+        [0.0, 0.5, 1.0],
       );
     canvas.drawCircle(center, radius, gradientPaint);
     
-    // 4. Brillo simple (1 círculo transparente)
+    // 4. Patrón de escamas sutil
+    final scalePaint = Paint()
+      ..color = Color.lerp(skin.primaryColor, const Color(0xFF000000), 0.12)!.withOpacity(0.25)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.8;
+    
+    // Líneas de escamas (menos que en la cabeza)
+    for (int i = -1; i <= 1; i++) {
+      final offset = i * radius * 0.4;
+      canvas.drawLine(
+        Offset(center.dx - radius * 0.6 + offset, center.dy - radius * 0.4),
+        Offset(center.dx + radius * 0.6 + offset, center.dy + radius * 0.4),
+        scalePaint,
+      );
+    }
+    
+    // 5. Brillo superior (efecto 3D)
     final shinePaint = Paint()
-      ..color = const Color(0xFFFFFFFF).withOpacity(0.2);
-    canvas.drawCircle(center - Offset(radius * 0.3, radius * 0.3), radius * 0.35, shinePaint);
+      ..shader = Gradient.radial(
+        center - Offset(radius * 0.35, radius * 0.35),
+        radius * 0.5,
+        [
+          const Color(0xFFFFFFFF).withOpacity(0.3),
+          const Color(0xFFFFFFFF).withOpacity(0.0),
+        ],
+        [0.0, 1.0],
+      );
+    canvas.drawCircle(center - Offset(radius * 0.25, radius * 0.25), radius * 0.4, shinePaint);
+    
+    // 6. Borde exterior definido
+    final borderPaint = Paint()
+      ..color = Color.lerp(skin.primaryColor, const Color(0xFF000000), 0.5)!
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
+    canvas.drawCircle(center, radius * 0.95, borderPaint);
+    
+    // 7. Borde interior sutil
+    final innerBorderPaint = Paint()
+      ..color = Color.lerp(skin.secondaryColor, const Color(0xFFFFFFFF), 0.15)!.withOpacity(0.4)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+    canvas.drawCircle(center, radius * 0.8, innerBorderPaint);
   }
 
   @override

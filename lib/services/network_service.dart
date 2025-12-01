@@ -143,15 +143,17 @@ class NetworkService {
     }
   }
   
+  
   void sendMove(Vector2 position, Vector2 direction) {
     if (!isConnected) return;
     
+    // ⚡ OPTIMIZACIÓN: Reducir precisión para mensajes más pequeños
     _channel!.sink.add(jsonEncode({
       'type': 'move',
-      'x': position.x,
-      'y': position.y,
-      'directionX': direction.x,
-      'directionY': direction.y,
+      'x': position.x.round(), // Entero en lugar de double = -50% tamaño
+      'y': position.y.round(), // Entero en lugar de double
+      'directionX': (direction.x * 100).round() / 100, // 2 decimales
+      'directionY': (direction.y * 100).round() / 100, // 2 decimales
     }));
   }
   

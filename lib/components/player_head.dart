@@ -60,50 +60,121 @@ class PlayerHead extends PositionComponent
     final direction = game.targetDirection;
     final angle = math.atan2(direction.y, direction.x);
     
-    // 1. Sombra (usando paint cacheado)
-    canvas.drawCircle(center + const Offset(3, 3), radius, _shadowPaint);
+    // 🐍 CABEZA OVALADA ESTILO SLITHER.IO
+    // Dimensiones de la cabeza ovalada (más ancha que alta)
+    final headWidth = radius * 2.2;
+    final headHeight = radius * 1.8;
     
-    // 2. Cuerpo base (usando paint cacheado)
-    canvas.drawCircle(center, radius * 1.12, _basePaint);
+    // Crear rectángulo para la cabeza ovalada
+    final headRect = Rect.fromCenter(
+      center: center,
+      width: headWidth,
+      height: headHeight,
+    );
     
-    // 3. ⚡ OPTIMIZADO: Gradiente simplificado (2 colores)
+    // 1. Sombra de la cabeza ovalada
+    canvas.save();
+    canvas.translate(3, 3);
+    canvas.rotate(angle);
+    canvas.translate(-center.dx, -center.dy);
+    canvas.drawOval(headRect, _shadowPaint);
+    canvas.restore();
+    
+    // 2. Capa base oscura (profundidad)
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.rotate(angle);
+    canvas.translate(-center.dx, -center.dy);
+    
+    final darkBasePaint = Paint()
+      ..color = Color.lerp(skin.primaryColor, const Color(0xFF000000), 0.3)!;
+    canvas.drawOval(headRect, darkBasePaint);
+    
+    // 3. Gradiente principal más realista (3 colores)
     final gradientPaint = Paint()
       ..shader = Gradient.radial(
-        center - Offset(radius * 0.3, radius * 0.3),
-        radius * 1.2,
+        center - Offset(radius * 0.4, radius * 0.3),
+        radius * 1.5,
         [
+          Color.lerp(skin.secondaryColor, const Color(0xFFFFFFFF), 0.3)!,
           skin.secondaryColor,
           skin.primaryColor,
         ],
+        [0.0, 0.5, 1.0],
+      );
+    final innerHeadRect = Rect.fromCenter(
+      center: center,
+      width: headWidth * 0.95,
+      height: headHeight * 0.95,
+    );
+    canvas.drawOval(innerHeadRect, gradientPaint);
+    
+    // 4. Patrón de escamas (textura)
+    _drawScalePattern(canvas, center, radius, angle);
+    
+    // 5. Brillo superior (efecto 3D)
+    final shinePaint = Paint()
+      ..shader = Gradient.radial(
+        center - Offset(radius * 0.4, radius * 0.4),
+        radius * 0.6,
+        [
+          const Color(0xFFFFFFFF).withOpacity(0.4),
+          const Color(0xFFFFFFFF).withOpacity(0.0),
+        ],
         [0.0, 1.0],
       );
-    canvas.drawCircle(center, radius, gradientPaint);
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: center - Offset(radius * 0.2, radius * 0.2),
+        width: headWidth * 0.5,
+        height: headHeight * 0.4,
+      ),
+      shinePaint,
+    );
     
-    // 4. ⚡ OPTIMIZADO: Brillo simplificado
-    final shinePaint = Paint()
-      ..color = const Color(0xFFFFFFFF).withOpacity(0.25);
-    canvas.drawCircle(center - Offset(radius * 0.3, radius * 0.3), radius * 0.4, shinePaint);
+    // 6. Borde exterior definido
+    final borderPaint = Paint()
+      ..color = Color.lerp(skin.primaryColor, const Color(0xFF000000), 0.6)!
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.0;
+    canvas.drawOval(innerHeadRect, borderPaint);
     
-    // 5. Borde (usando paint cacheado)
-    canvas.drawCircle(center, radius - 1, _borderPaint);
+    // 7. Borde interior sutil
+    final innerBorderPaint = Paint()
+      ..color = Color.lerp(skin.secondaryColor, const Color(0xFFFFFFFF), 0.2)!.withOpacity(0.5)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+    final innerBorderRect = Rect.fromCenter(
+      center: center,
+      width: headWidth * 0.85,
+      height: headHeight * 0.85,
+    );
+    canvas.drawOval(innerBorderRect, innerBorderPaint);
     
-    // 6. ⚡ OPTIMIZADO: Ojos simplificados
-    _drawSimpleEyes(canvas, center, radius, angle);
+    canvas.restore();
+    
+    // 8. Ojos mejorados (más grandes y expresivos)
+    _drawEnhancedEyes(canvas, center, radius, angle);
     
     // ❄️ Efecto visual de congelación
     if (game.isFrozen) {
+      canvas.save();
+      canvas.translate(center.dx, center.dy);
+      canvas.rotate(angle);
+      canvas.translate(-center.dx, -center.dy);
+      
       // Overlay azul semitransparente
       final frozenPaint = Paint()
         ..color = const Color(0xFF00CED1).withOpacity(0.4)
         ..style = PaintingStyle.fill;
-      canvas.drawCircle(center, radius, frozenPaint);
+      canvas.drawOval(headRect, frozenPaint);
       
       // Borde de hielo
       final iceBorderPaint = Paint()
         ..color = const Color(0xFF87CEEB)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 3.0;
-      canvas.drawCircle(center, radius, iceBorderPaint);
+      canvas.drawOval(headRect, iceBorderPaint);
       
       // Cristales de hielo (decorativos)
       final crystalPaint = Paint()
@@ -112,42 +183,138 @@ class PlayerHead extends PositionComponent
         ..strokeWidth = 2.0;
       
       for (int i = 0; i < 6; i++) {
-        final angle = (i * math.pi / 3);
-        final start = center + Offset(math.cos(angle) * radius * 0.3, math.sin(angle) * radius * 0.3);
-        final end = center + Offset(math.cos(angle) * radius * 0.8, math.sin(angle) * radius * 0.8);
+        final crystalAngle = (i * math.pi / 3);
+        final start = center + Offset(math.cos(crystalAngle) * radius * 0.3, math.sin(crystalAngle) * radius * 0.3);
+        final end = center + Offset(math.cos(crystalAngle) * radius * 0.8, math.sin(crystalAngle) * radius * 0.8);
         canvas.drawLine(start, end, crystalPaint);
       }
+      
+      canvas.restore();
     }
   }
   
-  // ⚡ OPTIMIZADO: Ojos simplificados (4 círculos en lugar de 10+)
-  void _drawSimpleEyes(Canvas canvas, Offset center, double radius, double angle) {
-    final eyeSize = radius * 0.3;
-    final eyeDistance = radius * 0.4;
+  // 🎨 Patrón de escamas para textura realista
+  void _drawScalePattern(Canvas canvas, Offset center, double radius, double angle) {
+    final scalePaint = Paint()
+      ..color = Color.lerp(skin.primaryColor, const Color(0xFF000000), 0.15)!.withOpacity(0.3)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
     
-    // Posición de los ojos
+    // Dibujar líneas de escamas (patrón diagonal)
+    for (int i = -2; i <= 2; i++) {
+      final offset = i * radius * 0.3;
+      final startX = center.dx - radius + offset;
+      final startY = center.dy - radius * 0.5;
+      final endX = center.dx + radius + offset;
+      final endY = center.dy + radius * 0.5;
+      
+      canvas.drawLine(
+        Offset(startX, startY),
+        Offset(endX, endY),
+        scalePaint,
+      );
+    }
+  }
+  
+  
+  // 👁️ Ojos mejorados estilo Slither.io
+  void _drawEnhancedEyes(Canvas canvas, Offset center, double radius, double angle) {
+    final eyeSize = radius * 0.45; // Ojos más grandes
+    final eyeDistance = radius * 0.5;
+    
+    // Posición de los ojos (adelante de la cabeza)
     final eyeOffset = Offset(
       math.cos(angle) * eyeDistance,
       math.sin(angle) * eyeDistance,
     );
     final perpendicular = Offset(
-      -math.sin(angle) * (radius * 0.3),
-      math.cos(angle) * (radius * 0.3),
+      -math.sin(angle) * (radius * 0.35),
+      math.cos(angle) * (radius * 0.35),
     );
     
-    // Paints simples y reutilizables
-    final whitePaint = Paint()..color = skin.eyeColor;
+    // Paints para los ojos
+    final eyeWhitePaint = Paint()..color = skin.eyeColor;
+    final eyeShadowPaint = Paint()
+      ..color = const Color(0xFF000000).withOpacity(0.2);
     final pupilPaint = Paint()..color = skin.pupilColor;
+    final pupilShinePaint = Paint()
+      ..color = const Color(0xFFFFFFFF).withOpacity(0.6);
     
     // Ojo izquierdo
     final leftEyePos = center + eyeOffset + perpendicular;
-    canvas.drawCircle(leftEyePos, eyeSize, whitePaint);
-    canvas.drawCircle(leftEyePos + Offset(math.cos(angle) * eyeSize * 0.25, math.sin(angle) * eyeSize * 0.25), eyeSize * 0.4, pupilPaint);
     
-    // Ojo derecho
+    // Sombra del ojo
+    canvas.drawCircle(leftEyePos + const Offset(1, 1), eyeSize, eyeShadowPaint);
+    
+    // Blanco del ojo con gradiente
+    final eyeGradientPaint = Paint()
+      ..shader = Gradient.radial(
+        leftEyePos - Offset(eyeSize * 0.2, eyeSize * 0.2),
+        eyeSize,
+        [
+          const Color(0xFFFFFFFF),
+          skin.eyeColor,
+        ],
+        [0.0, 1.0],
+      );
+    canvas.drawCircle(leftEyePos, eyeSize, eyeGradientPaint);
+    
+    // Borde del ojo
+    final eyeBorderPaint = Paint()
+      ..color = const Color(0xFF000000).withOpacity(0.3)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+    canvas.drawCircle(leftEyePos, eyeSize, eyeBorderPaint);
+    
+    // Pupila
+    final pupilPos = leftEyePos + Offset(
+      math.cos(angle) * eyeSize * 0.3,
+      math.sin(angle) * eyeSize * 0.3,
+    );
+    canvas.drawCircle(pupilPos, eyeSize * 0.5, pupilPaint);
+    
+    // Brillo en la pupila
+    canvas.drawCircle(
+      pupilPos - Offset(eyeSize * 0.15, eyeSize * 0.15),
+      eyeSize * 0.2,
+      pupilShinePaint,
+    );
+    
+    // Ojo derecho (mismo proceso)
     final rightEyePos = center + eyeOffset - perpendicular;
-    canvas.drawCircle(rightEyePos, eyeSize, whitePaint);
-    canvas.drawCircle(rightEyePos + Offset(math.cos(angle) * eyeSize * 0.25, math.sin(angle) * eyeSize * 0.25), eyeSize * 0.4, pupilPaint);
+    
+    // Sombra del ojo
+    canvas.drawCircle(rightEyePos + const Offset(1, 1), eyeSize, eyeShadowPaint);
+    
+    // Blanco del ojo con gradiente
+    final eyeGradientPaint2 = Paint()
+      ..shader = Gradient.radial(
+        rightEyePos - Offset(eyeSize * 0.2, eyeSize * 0.2),
+        eyeSize,
+        [
+          const Color(0xFFFFFFFF),
+          skin.eyeColor,
+        ],
+        [0.0, 1.0],
+      );
+    canvas.drawCircle(rightEyePos, eyeSize, eyeGradientPaint2);
+    
+    // Borde del ojo
+    canvas.drawCircle(rightEyePos, eyeSize, eyeBorderPaint);
+    
+    // Pupila
+    final pupilPos2 = rightEyePos + Offset(
+      math.cos(angle) * eyeSize * 0.3,
+      math.sin(angle) * eyeSize * 0.3,
+    );
+    canvas.drawCircle(pupilPos2, eyeSize * 0.5, pupilPaint);
+    
+    // Brillo en la pupila
+    canvas.drawCircle(
+      pupilPos2 - Offset(eyeSize * 0.15, eyeSize * 0.15),
+      eyeSize * 0.2,
+      pupilShinePaint,
+    );
   }
 
   @override

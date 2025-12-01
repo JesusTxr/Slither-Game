@@ -94,9 +94,17 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
       isMultiplayer = true;
     }
     
+    // ⚡ FIX CRÍTICO: Si hay networkService, definitivamente es multijugador
+    // Esto asegura que isMultiplayer sea true incluso si roomCode se perdió
+    if (networkService != null) {
+      print('🌐 [GAME] networkService existe, forzando isMultiplayer = true');
+      isMultiplayer = true;
+    }
+    
     print('🎮 [GAME] ================================================');
     print('🎮 [GAME] onLoad - roomCode: $roomCode');
     print('🎮 [GAME] onLoad - GameConfig.isMultiplayer: ${GameConfig.isMultiplayer}');
+    print('🎮 [GAME] onLoad - networkService existe: ${networkService != null}');
     print('🎮 [GAME] onLoad - isMultiplayer (FINAL): $isMultiplayer');
     print('🎮 [GAME] ================================================');
     
@@ -192,6 +200,10 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
     try {
       await networkService!.connect();
       print('✅ Conectado al servidor multijugador');
+      
+      // ⚡ FIX CRÍTICO: Asegurar que isMultiplayer sea true después de conectar
+      isMultiplayer = true;
+      print('🌐 [GAME] isMultiplayer forzado a TRUE después de conectar');
       
       // Enviar nickname (asegurar que no esté vacío)
       final nickname = GameConfig.playerNickname ?? 'Player';

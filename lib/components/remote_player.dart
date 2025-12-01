@@ -217,6 +217,18 @@ class RemotePlayer extends PositionComponent
   }
 
   @override
+  void updateTree(double dt) {
+    // ⚡ FIX CRÍTICO: Actualizar SIEMPRE, incluso si el juego está pausado
+    // Esto es necesario para que la interpolación funcione
+    update(dt);
+    
+    // Actualizar hijos normalmente
+    for (final child in children) {
+      child.updateTree(dt);
+    }
+  }
+
+  @override
   void update(double dt) {
     super.update(dt);
     size = Vector2.all(currentRadius * 2);
@@ -242,7 +254,13 @@ class RemotePlayer extends PositionComponent
         
         // Mover hacia el objetivo (muy agresivo)
         final movement = direction * moveDistance.clamp(0, distance);
+        final oldPosition = position.clone();
         position += movement;
+        
+        // ⚡ DEBUG: Verificar que realmente se movió
+        if ((position - oldPosition).length < 0.01) {
+          print('⚠️ [REMOTE] $playerId - NO SE MOVIÓ! dt: $dt, moveDistance: $moveDistance, movement: $movement');
+        }
         
         // Actualizar velocidad para extrapolación
         _velocity = movement / dt;

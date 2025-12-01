@@ -816,8 +816,7 @@ class SlitherServer {
       if (targetPlayer != null) {
         final segmentsDestroyedInt = (segmentsDestroyed as num).toInt();
         targetPlayer.bodyLength = (targetPlayer.bodyLength - segmentsDestroyedInt).clamp(5, 1000);
-        targetPlayer.bodyLength = (targetPlayer.bodyLength - segmentsDestroyed).clamp(5, 1000);
-        print('💣 Jugador $targetId perdió $segmentsDestroyed segmentos (ahora: ${targetPlayer.bodyLength})');
+        print('💣 Jugador $targetId perdió $segmentsDestroyedInt segmentos (ahora: ${targetPlayer.bodyLength})');
       }
     });
     

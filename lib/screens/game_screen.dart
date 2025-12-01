@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flame/game.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -16,6 +17,8 @@ class GameScreen extends StatefulWidget {
 class _GameScreenState extends State<GameScreen> {
   SlitherGame? _game;
   bool _isLoading = true;
+  bool _isMultiplayer = false; // ⚡ Guardar estado de multijugador
+  Timer? _updateTimer; // ⚡ Timer para actualizar UI periódicamente
   
   @override
   void didChangeDependencies() {
@@ -23,6 +26,12 @@ class _GameScreenState extends State<GameScreen> {
     if (_game == null) {
       _initializeGame();
     }
+  }
+  
+  @override
+  void dispose() {
+    _updateTimer?.cancel();
+    super.dispose();
   }
   
   Future<void> _initializeGame() async {
@@ -40,8 +49,10 @@ class _GameScreenState extends State<GameScreen> {
     
     // Configurar modo de juego
     GameConfig.isMultiplayer = isMultiplayer;
+    _isMultiplayer = isMultiplayer; // ⚡ Guardar en estado local
     
     print('🎮 [GAME_SCREEN] GameConfig.isMultiplayer establecido a: ${GameConfig.isMultiplayer}');
+    print('🎮 [GAME_SCREEN] _isMultiplayer establecido a: $_isMultiplayer');
     
     // 🎨 Cargar skin guardada
     final prefs = await SharedPreferences.getInstance();
@@ -56,6 +67,22 @@ class _GameScreenState extends State<GameScreen> {
     setState(() {
       _game = SlitherGame(roomCode: roomCode, skin: skin);
       _isLoading = false;
+      _isMultiplayer = GameConfig.isMultiplayer; // ⚡ Sincronizar con GameConfig
+    });
+    
+    // ⚡ Timer para actualizar UI cada 500ms y detectar cambios en isMultiplayer
+    _updateTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
+      if (mounted && _game != null) {
+        final newIsMultiplayer = _game!.isMultiplayer || GameConfig.isMultiplayer;
+        if (newIsMultiplayer != _isMultiplayer) {
+          print('🔄 [GAME_SCREEN] isMultiplayer cambió: $_isMultiplayer → $newIsMultiplayer');
+          setState(() {
+            _isMultiplayer = newIsMultiplayer;
+          });
+        }
+      } else {
+        timer.cancel();
+      }
     });
   }
   
@@ -116,7 +143,7 @@ class _GameScreenState extends State<GameScreen> {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                game.isMultiplayer ? '🌐 Multijugador' : '🎮 Modo Solo',
+                GameConfig.isMultiplayer ? '🌐 Multijugador' : '🎮 Modo Solo',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 16,
@@ -126,7 +153,7 @@ class _GameScreenState extends State<GameScreen> {
             ),
           ),
           // Widget de ranking (solo en multijugador)
-          if (game.isMultiplayer)
+          if (GameConfig.isMultiplayer)
             Positioned(
               top: 80,
               left: 10,

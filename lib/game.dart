@@ -203,7 +203,9 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
       
       // ⚡ FIX CRÍTICO: Asegurar que isMultiplayer sea true después de conectar
       isMultiplayer = true;
+      GameConfig.isMultiplayer = true; // ⚡ También actualizar GameConfig
       print('🌐 [GAME] isMultiplayer forzado a TRUE después de conectar');
+      print('🌐 [GAME] GameConfig.isMultiplayer actualizado a TRUE');
       
       // Enviar nickname (asegurar que no esté vacío)
       final nickname = GameConfig.playerNickname ?? 'Player';

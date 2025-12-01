@@ -77,7 +77,14 @@ class NetworkService {
           onPlayerLeft?.call(data);
           break;
         case 'playerMove':
-          onPlayerMove?.call(data);
+          print('📥 [NETWORK] Mensaje playerMove recibido: $data');
+          print('📥 [NETWORK] onPlayerMove callback existe: ${onPlayerMove != null}');
+          if (onPlayerMove != null) {
+            onPlayerMove!.call(data);
+            print('📥 [NETWORK] Callback onPlayerMove ejecutado');
+          } else {
+            print('❌ [NETWORK] ERROR: onPlayerMove callback es NULL!');
+          }
           break;
         case 'playerUpdate':
           onPlayerUpdate?.call(data);
@@ -147,13 +154,12 @@ class NetworkService {
   void sendMove(Vector2 position, Vector2 direction) {
     if (!isConnected) return;
     
-    // ⚡ OPTIMIZACIÓN: Reducir precisión para mensajes más pequeños
     _channel!.sink.add(jsonEncode({
       'type': 'move',
-      'x': position.x.round(), // Entero en lugar de double = -50% tamaño
-      'y': position.y.round(), // Entero en lugar de double
-      'directionX': (direction.x * 100).round() / 100, // 2 decimales
-      'directionY': (direction.y * 100).round() / 100, // 2 decimales
+      'x': position.x, // Double completo (REVERTIDO)
+      'y': position.y, // Double completo (REVERTIDO)
+      'directionX': direction.x, // Double completo (REVERTIDO)
+      'directionY': direction.y, // Double completo (REVERTIDO)
     }));
   }
   

@@ -26,10 +26,10 @@ class RemotePlayer extends PositionComponent
   Vector2? _targetPosition;
   Vector2? _lastPosition;
   Vector2? _velocity; // Velocidad actual para extrapolación
-  double _interpolationSpeed = 15.0; // ⚡ OPTIMIZADO: Balanceado (antes 25.0 muy agresivo)
+  double _interpolationSpeed = 25.0; // ULTRA RÁPIDO (REVERTIDO)
   final List<_PositionSnapshot> _positionBuffer = []; // Buffer de posiciones
   double _timeSinceLastUpdate = 0;
-  final double _maxExtrapolationTime = 0.5; // ⚡ OPTIMIZADO: 0.5s (antes 1.2s muy largo)
+  final double _maxExtrapolationTime = 1.2; // Extrapolación larga (REVERTIDO)
   
   // ⚡ OPTIMIZACIÓN: Cache del TextPainter para evitar reconstrucción cada frame
   late final TextPainter _cachedTextPainter;
@@ -100,22 +100,6 @@ class RemotePlayer extends PositionComponent
 
   @override
   void render(Canvas canvas) {
-    // ⚡ OPTIMIZACIÓN: Culling - no renderizar si está fuera de cámara
-    final camera = game.cameraComponent;
-    final visibleRect = camera.visibleWorldRect;
-    
-    // Crear rectángulo alrededor del jugador
-    final playerRect = Rect.fromCenter(
-      center: position.toOffset(),
-      width: size.x * 2, // Un poco más grande para suavizar entrada/salida
-      height: size.y * 2,
-    );
-    
-    // Si el jugador está completamente fuera de la vista, no renderizarlo
-    if (!visibleRect.overlaps(playerRect)) {
-      return; // ⚡ OPTIMIZACIÓN: Ahorra ~50% CPU con muchos jugadores
-    }
-    
     super.render(canvas);
     
     final center = (size / 2).toOffset();
@@ -207,19 +191,29 @@ class RemotePlayer extends PositionComponent
   }
 
   void updatePosition(Vector2 newPosition) {
-    print('📍 [REMOTE] updatePosition llamado para $playerId: $newPosition');
+    print('📍 [REMOTE] ================================================');
+    print('📍 [REMOTE] updatePosition llamado para $playerId');
+    print('📍 [REMOTE] Posición actual: $position');
+    print('📍 [REMOTE] Nueva posición objetivo: $newPosition');
+    
     // En lugar de cambiar la posición instantáneamente, establecer como objetivo
     _lastPosition = position.clone();
     _targetPosition = newPosition.clone();
     _timeSinceLastUpdate = 0; // Reiniciar timer
     
-    // Calcular velocidad estimada con precisión balanceada
+    // Calcular velocidad estimada con precisión ULTRA alta
     if (_lastPosition != null) {
       final delta = newPosition - _lastPosition!;
-      // ⚡ OPTIMIZADO: Factor x50 (antes x100 muy agresivo)
-      _velocity = delta * 50; // Factor balanceado para movimiento fluido
-      print('📍 [REMOTE] Velocidad calculada para $playerId: $_velocity');
+      // Factor MUY alto para predicción súper agresiva (REVERTIDO)
+      _velocity = delta * 100; // Factor x100 para movimiento ultra fluido
+      print('📍 [REMOTE] Delta: $delta');
+      print('📍 [REMOTE] Velocidad calculada: $_velocity');
+    } else {
+      print('📍 [REMOTE] _lastPosition es null, estableciendo velocidad inicial');
+      _velocity = Vector2.zero();
     }
+    print('📍 [REMOTE] _targetPosition establecido: $_targetPosition');
+    print('📍 [REMOTE] ================================================');
   }
 
   @override
@@ -232,6 +226,11 @@ class RemotePlayer extends PositionComponent
     // 🔄 Sistema de interpolación mejorado con extrapolación
     if (_targetPosition != null) {
       final distance = (_targetPosition! - position).length;
+      
+      // Log cada 60 frames (1 segundo) para no saturar
+      if ((_timeSinceLastUpdate * 60).toInt() % 60 == 0) {
+        print('🔄 [REMOTE] $playerId - Posición actual: $position, Objetivo: $_targetPosition, Distancia: $distance');
+      }
       
       if (distance > 0.1) { // Umbral mucho más bajo
         // Calcular velocidad suave
@@ -258,10 +257,10 @@ class RemotePlayer extends PositionComponent
         _velocity = Vector2.zero();
       }
     } else if (_velocity != null && _timeSinceLastUpdate < _maxExtrapolationTime) {
-      // 🚀 Extrapolación BALANCEADA: continuar movimiento fluido
-      // ⚡ OPTIMIZADO: Reducir gradualmente para evitar desviación excesiva
-      final extrapolationFactor = 1.0 - ((_timeSinceLastUpdate / _maxExtrapolationTime) * 0.7);
-      final movement = _velocity! * dt * extrapolationFactor.clamp(0.3, 1.0); // Mínimo 30% velocidad
+      // 🚀 Extrapolación ULTRA AGRESIVA (REVERTIDO)
+      // Reducir MUY lentamente para mantener movimiento casi constante
+      final extrapolationFactor = 1.0 - ((_timeSinceLastUpdate / _maxExtrapolationTime) * 0.5);
+      final movement = _velocity! * dt * extrapolationFactor.clamp(0.5, 1.0); // Mínimo 50% velocidad
       position += movement;
       
       // Agregar al path

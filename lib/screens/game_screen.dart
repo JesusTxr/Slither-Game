@@ -31,8 +31,17 @@ class _GameScreenState extends State<GameScreen> {
     final isMultiplayer = args?['multiplayer'] ?? false;
     final roomCode = args?['roomCode'] as String?;
     
+    print('🎮 [GAME_SCREEN] ================================================');
+    print('🎮 [GAME_SCREEN] _initializeGame llamado');
+    print('🎮 [GAME_SCREEN] args: $args');
+    print('🎮 [GAME_SCREEN] isMultiplayer: $isMultiplayer');
+    print('🎮 [GAME_SCREEN] roomCode: $roomCode');
+    print('🎮 [GAME_SCREEN] ================================================');
+    
     // Configurar modo de juego
     GameConfig.isMultiplayer = isMultiplayer;
+    
+    print('🎮 [GAME_SCREEN] GameConfig.isMultiplayer establecido a: ${GameConfig.isMultiplayer}');
     
     // 🎨 Cargar skin guardada
     final prefs = await SharedPreferences.getInstance();

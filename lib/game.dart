@@ -64,9 +64,9 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
   NetworkService? networkService;
   final Map<String, RemotePlayer> remotePlayers = {};
   double _networkUpdateTimer = 0;
-  final double _networkUpdateInterval = 0.05; // ⚡ OPTIMIZADO: 20 FPS (antes 60 FPS) = -66% tráfico
+  final double _networkUpdateInterval = 0.016; // 60 FPS - Ultra fluido (REVERTIDO)
   Vector2? _lastSentPosition; // Para detectar cambios significativos
-  double _minDistanceToSend = 3.0; // ⚡ OPTIMIZADO: Enviar solo con cambio de 3+ píxeles (antes 1.0)
+  double _minDistanceToSend = 1.0; // Enviar con cambio muy pequeño (REVERTIDO)
   bool isMultiplayer = false;
   String? roomCode;  // 🔑 Código de sala para multijugador
   bool waitingForPlayers = false;  // 🔑 Esperando a que todos los jugadores se conecten
@@ -84,11 +84,20 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
 
   @override
   Future<void> onLoad() async {
-    // Verificar si es modo multijugador
-    isMultiplayer = GameConfig.isMultiplayer;
+    // ⚡ FIX: Detectar multijugador por roomCode, no por GameConfig
+    // GameConfig.isMultiplayer se resetea con hot reload
+    isMultiplayer = roomCode != null && roomCode!.isNotEmpty;
+    
+    // ⚡ FIX ADICIONAL: También verificar GameConfig como respaldo
+    if (!isMultiplayer && GameConfig.isMultiplayer) {
+      print('⚠️ [GAME] roomCode vacío pero GameConfig.isMultiplayer = true, forzando multijugador');
+      isMultiplayer = true;
+    }
+    
     print('🎮 [GAME] ================================================');
-    print('🎮 [GAME] onLoad - isMultiplayer: $isMultiplayer');
     print('🎮 [GAME] onLoad - roomCode: $roomCode');
+    print('🎮 [GAME] onLoad - GameConfig.isMultiplayer: ${GameConfig.isMultiplayer}');
+    print('🎮 [GAME] onLoad - isMultiplayer (FINAL): $isMultiplayer');
     print('🎮 [GAME] ================================================');
     
     // 1. Crear el mundo
@@ -296,19 +305,26 @@ class SlitherGame extends FlameGame with PanDetector, HasCollisionDetection {
   }
   
   void _handlePlayerMove(Map<String, dynamic> data) {
+    print('📥 [GAME] ================================================');
+    print('📥 [GAME] _handlePlayerMove llamado con data: $data');
     final playerId = data['playerId'];
+    print('📥 [GAME] playerId extraído: $playerId');
+    print('📥 [GAME] remotePlayers keys: ${remotePlayers.keys.toList()}');
     final player = remotePlayers[playerId];
-    print('📥 [GAME] Recibido movimiento de $playerId, jugador existe: ${player != null}');
+    print('📥 [GAME] Jugador encontrado: ${player != null}');
+    
     if (player != null) {
-      // Convertir coordenadas (pueden venir como int o double)
       final x = (data['x'] as num).toDouble();
       final y = (data['y'] as num).toDouble();
       print('📥 [GAME] Actualizando posición de $playerId a ($x, $y)');
+      print('📥 [GAME] Posición actual del jugador: ${player.position}');
       player.updatePosition(Vector2(x, y));
+      print('📥 [GAME] updatePosition llamado, nueva posición objetivo: ${player._targetPosition}');
     } else {
-      print('⚠️ [GAME] Jugador $playerId no encontrado en remotePlayers');
+      print('⚠️ [GAME] ERROR: Jugador $playerId no encontrado en remotePlayers');
       print('⚠️ [GAME] Jugadores remotos actuales: ${remotePlayers.keys.toList()}');
     }
+    print('📥 [GAME] ================================================');
   }
   
   void _handleFoodEaten(Map<String, dynamic> data) {
